@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.accounts.models import Invitation
 from apps.events.models import Event
 from apps.news.models import News
 
@@ -42,6 +43,15 @@ class EventForm(forms.ModelForm):
     def clean_description(self):
         # Barrière serveur : on ne stocke que du HTML léger sanitizé.
         return clean_html(self.cleaned_data["description"])
+
+
+class InvitationForm(forms.ModelForm):
+    """Création d'une invitation. L'e-mail est purement indicatif (le lien est
+    transmis hors-ligne en v1) ; le jeton est généré par le modèle."""
+
+    class Meta:
+        model = Invitation
+        fields = ["email"]
 
 
 class NewsForm(forms.ModelForm):

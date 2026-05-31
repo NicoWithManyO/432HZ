@@ -10,10 +10,11 @@ from django.views.generic import (
     UpdateView,
 )
 
-from apps.accounts.permissions import ValidatedRequiredMixin
+from apps.accounts.models import Invitation, Profile
+from apps.accounts.permissions import OwnerRequiredMixin, ValidatedRequiredMixin
 from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
-from apps.gestion.forms import EventForm, NewsForm
+from apps.gestion.forms import EventForm, InvitationForm, NewsForm
 from apps.media.forms import ImageMetaForm, ImageUploadForm
 from apps.media.models import Image
 from apps.news.models import News
@@ -172,3 +173,43 @@ class NewsUnpublishView(ValidatedRequiredMixin, View):
     def post(self, request, pk):
         get_object_or_404(News, pk=pk).unpublish()
         return redirect("gestion:news-list")
+
+
+# --- Comptes & invitations (owner) ---
+
+
+class AccountListView(OwnerRequiredMixin, CreateView):
+    """Hub comptes (owner) : crée des invitations et liste éditeurs + invitations."""
+
+    model = Invitation
+    form_class = InvitationForm
+    template_name = "gestion/accounts/list.html"
+    success_url = reverse_lazy("gestion:accounts-list")
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["profiles"] = Profile.objects.select_related("user").order_by(
+            "role", "user__username"
+        )
+        context["invitations"] = Invitation.objects.all()
+        return context
+
+
+class InvitationRegenerateView(OwnerRequiredMixin, View):
+    def post(self, request, pk):
+        get_object_or_404(Invitation, pk=pk).regenerate()
+        return redirect("gestion:accounts-list")
+
+
+class ProfileToggleValidationView(OwnerRequiredMixin, View):
+    def post(self, request, pk):
+        profile = get_object_or_404(Profile, pk=pk)
+        # Les owners restent toujours validés (anti-lockout) : seuls les éditeurs basculent.
+        if not profile.is_owner:
+            profile.is_validated = not profile.is_validated
+            profile.save(update_fields=["is_validated"])
+        return redirect("gestion:accounts-list")

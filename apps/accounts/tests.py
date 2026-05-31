@@ -77,6 +77,27 @@ def test_invitation_validity_states():
 
 
 @pytest.mark.django_db
+def test_invitation_regenerate_renews_token_and_expiry():
+    # Invitation expirée mais jamais consommée : régénérer la rend de nouveau valable.
+    inv = Invitation.objects.create(expires_at=timezone.now() - timedelta(days=1))
+    old_token = inv.token
+    inv.regenerate()
+    inv.refresh_from_db()
+    assert inv.token != old_token
+    assert inv.is_valid
+
+
+@pytest.mark.django_db
+def test_invitation_regenerate_does_not_resurrect_used():
+    # Garde-fou sécurité : une invitation à usage unique consommée le reste.
+    inv = Invitation.objects.create(used_at=timezone.now())
+    inv.regenerate()
+    inv.refresh_from_db()
+    assert inv.is_used
+    assert not inv.is_valid
+
+
+@pytest.mark.django_db
 def test_edit_lock_is_active_while_heartbeat_recent():
     user = get_user_model().objects.create_user(username="h", password=PASSWORD)
     lock = EditLock.objects.create(object_type="event", object_id=uuid.uuid4(), holder=user)

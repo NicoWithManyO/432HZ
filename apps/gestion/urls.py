@@ -37,4 +37,16 @@ urlpatterns = [
     path("actus/<uuid:pk>/supprimer/", views.NewsDeleteView.as_view(), name="news-delete"),
     path("actus/<uuid:pk>/publier/", views.NewsPublishView.as_view(), name="news-publish"),
     path("actus/<uuid:pk>/depublier/", views.NewsUnpublishView.as_view(), name="news-unpublish"),
+    # Comptes & invitations (owner)
+    path("comptes/", views.AccountListView.as_view(), name="accounts-list"),
+    path(
+        "comptes/invitations/<uuid:pk>/regenerer/",
+        views.InvitationRegenerateView.as_view(),
+        name="invitation-regenerate",
+    ),
+    path(
+        "comptes/profils/<int:pk>/validation/",
+        views.ProfileToggleValidationView.as_view(),
+        name="profile-toggle-validation",
+    ),
 ]

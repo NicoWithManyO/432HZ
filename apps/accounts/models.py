@@ -83,6 +83,14 @@ class Invitation(UUIDModel):
     def is_valid(self):
         return not self.is_used and not self.is_expired
 
+    def regenerate(self):
+        """Réémet un jeton neuf et repousse l'expiration. Ne touche jamais à
+        `used_at` : une invitation à usage unique consommée le reste (sinon le lien
+        rouvrirait la création d'un nouveau compte)."""
+        self.token = _default_token()
+        self.expires_at = _default_expiry()
+        self.save(update_fields=["token", "expires_at"])
+
 
 class EditLock(UUIDModel):
     """Verrou d'édition pessimiste (confort) : actif tant que le heartbeat est récent."""

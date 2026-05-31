@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import Profile
+from apps.accounts.models import OWNER, Invitation, Profile
 from apps.common.models import PUBLISHED
 from apps.events.models import Event
 from apps.gestion.sanitize import clean_html
@@ -178,3 +178,65 @@ def test_news_list_filters(validated_client):
     assert titles("published") == {"publiée"}
     assert titles("drafts") == {"brouillon"}
     assert titles("all") == {"publiée", "brouillon"}
+
+
+# --- Vues comptes (owner) ---
+
+
+@pytest.fixture
+def owner_client(client):
+    user = User.objects.create_user("owner", password="pw-test-1234")
+    Profile.objects.create(user=user, role=OWNER, is_validated=True)
+    client.force_login(user)
+    return client
+
+
+@pytest.mark.django_db
+def test_accounts_forbidden_for_editor(validated_client):
+    # validated_client est un éditeur validé, pas un owner.
+    assert validated_client.get(reverse("gestion:accounts-list")).status_code == 403
+
+
+@pytest.mark.django_db
+def test_accounts_visible_for_owner(owner_client):
+    assert owner_client.get(reverse("gestion:accounts-list")).status_code == 200
+
+
+@pytest.mark.django_db
+def test_invitation_create_generates_token(owner_client):
+    response = owner_client.post(reverse("gestion:accounts-list"), {"email": "x@example.com"})
+    assert response.status_code == 302
+    inv = Invitation.objects.get()
+    assert inv.token  # jeton généré par le modèle
+    assert inv.created_by.username == "owner"
+
+
+@pytest.mark.django_db
+def test_invitation_regenerate_changes_token(owner_client):
+    inv = Invitation.objects.create()
+    old_token = inv.token
+    owner_client.post(reverse("gestion:invitation-regenerate", args=[inv.pk]))
+    inv.refresh_from_db()
+    assert inv.token != old_token
+
+
+@pytest.mark.django_db
+def test_profile_toggle_validation(owner_client):
+    editor = User.objects.create_user("ed", password="pw-test-1234")
+    profile = Profile.objects.create(user=editor, is_validated=True)
+    owner_client.post(reverse("gestion:profile-toggle-validation", args=[profile.pk]))
+    profile.refresh_from_db()
+    assert profile.is_validated is False
+
+    owner_client.post(reverse("gestion:profile-toggle-validation", args=[profile.pk]))
+    profile.refresh_from_db()
+    assert profile.is_validated is True
+
+
+@pytest.mark.django_db
+def test_owner_profile_validation_not_toggled(owner_client):
+    # L'owner reste toujours validé (anti-lockout) : la bascule est sans effet.
+    owner_profile = Profile.objects.get(role=OWNER)
+    owner_client.post(reverse("gestion:profile-toggle-validation", args=[owner_profile.pk]))
+    owner_profile.refresh_from_db()
+    assert owner_profile.is_validated is True

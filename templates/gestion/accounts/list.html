@@ -1,0 +1,76 @@
+{% extends "gestion/base_gestion.html" %}
+
+{% block title %}Comptes · Gestion 432 Hz{% endblock %}
+
+{% block gestion %}
+<span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Administration</span>
+<h1 class="font-display font-black text-[clamp(2rem,5vw,3rem)] leading-none mt-2 mb-8">Comptes</h1>
+
+{# --- Inviter un éditeur --- #}
+<section class="mb-12">
+  <h2 class="font-display font-bold text-xl mb-3">Inviter un éditeur</h2>
+  <p class="text-ink-soft text-[.9rem] mb-4">Le lien d'invitation se transmet hors-ligne. L'e-mail est indicatif.</p>
+  <form method="post" class="gestion-form flex items-end gap-3 flex-wrap">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn--red">Créer l'invitation</button>
+  </form>
+</section>
+
+{# --- Invitations --- #}
+<section class="mb-12">
+  <h2 class="font-display font-bold text-xl mb-3">Invitations</h2>
+  {% if invitations %}
+  <div class="border-2 border-ink divide-y-2 divide-ink">
+    {% for inv in invitations %}
+    <div class="p-3 flex flex-col gap-2">
+      <div class="flex items-center gap-3 flex-wrap">
+        {% if inv.is_valid %}
+        <span class="badge badge--published">Valable</span>
+        {% elif inv.is_used %}
+        <span class="badge badge--draft">Utilisée</span>
+        {% else %}
+        <span class="badge badge--draft">Expirée</span>
+        {% endif %}
+        {% if inv.email %}<span class="font-mono text-[.72rem] text-muted">{{ inv.email }}</span>{% endif %}
+        <span class="font-mono text-[.66rem] uppercase tracking-[.08em] text-muted ml-auto">expire le {{ inv.expires_at|date:"d/m/Y" }}</span>
+        {% if not inv.is_used %}
+        <form method="post" action="{% url 'gestion:invitation-regenerate' inv.pk %}">{% csrf_token %}<button class="nav-link text-[.8rem]">Régénérer</button></form>
+        {% endif %}
+      </div>
+      <code class="block bg-paper-2 border-2 border-ink p-2 font-mono text-[.72rem] break-all select-all">{{ request.scheme }}://{{ request.get_host }}{% url 'gestion:accept-invitation' inv.token %}</code>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-ink-soft">Aucune invitation pour l'instant.</p>
+  {% endif %}
+</section>
+
+{# --- Éditeurs --- #}
+<section>
+  <h2 class="font-display font-bold text-xl mb-3">Membres</h2>
+  <div class="border-2 border-ink divide-y-2 divide-ink">
+    {% for profile in profiles %}
+    <div class="flex items-center gap-4 p-3 flex-wrap">
+      <div class="min-w-0 flex-1">
+        <span class="font-display font-bold">{{ profile.user.username }}</span>
+        {% if profile.user.email %}<span class="font-mono text-[.72rem] text-muted ml-2">{{ profile.user.email }}</span>{% endif %}
+        <div class="font-mono text-[.66rem] uppercase tracking-[.08em] text-muted mt-1">{{ profile.get_role_display }}</div>
+      </div>
+      {% if profile.is_validated %}
+      <span class="badge badge--published">Validé</span>
+      {% else %}
+      <span class="badge badge--draft">En attente</span>
+      {% endif %}
+      {% if not profile.is_owner %}
+      <form method="post" action="{% url 'gestion:profile-toggle-validation' profile.pk %}">
+        {% csrf_token %}
+        <button class="nav-link text-[.8rem]">{% if profile.is_validated %}Suspendre{% else %}Valider{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

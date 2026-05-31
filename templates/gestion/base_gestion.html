@@ -21,7 +21,9 @@
       <a class="nav-link" href="{% url 'gestion:event-list' %}">Events</a>
       <a class="nav-link" href="{% url 'gestion:news-list' %}">Actus</a>
       <a class="nav-link" href="{% url 'gestion:media-list' %}">Médiathèque</a>
-      {# Comptes : ajouté en P2.4 (owner only). #}
+      {% if user.profile.is_owner %}
+      <a class="nav-link" href="{% url 'gestion:accounts-list' %}">Comptes</a>
+      {% endif %}
       {% block gestion_nav %}{% endblock %}
       <form method="post" action="{% url 'gestion:logout' %}" class="inline">
         {% csrf_token %}
