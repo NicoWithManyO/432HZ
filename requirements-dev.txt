@@ -1,0 +1,6 @@
+# Dépendances de développement (tests, lint). Inclut la prod.
+-r requirements.txt
+pytest==9.0.3
+pytest-django==4.12.0
+coverage==7.14.1
+ruff==0.15.15

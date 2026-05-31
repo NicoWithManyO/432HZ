@@ -1,0 +1,93 @@
+/* Polices self-hosted (RGPD/perf — aucun appel Google côté client).
+   Fichiers woff2 copiés dans static/fonts/ par `npm run fonts` (scripts/copy-fonts.mjs).
+   font-display:swap : texte visible immédiatement avec la fallback. Cf DESIGN.md §3. */
+
+/* Fraunces (serif display) — 400/600/900, normal + italique */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/fraunces-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/fraunces-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/fraunces-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/fraunces-latin-600-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/static/fonts/fraunces-latin-900-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/static/fonts/fraunces-latin-900-italic.woff2") format("woff2");
+}
+
+/* Archivo (grotesque corps/UI) — 400/500/600/800 */
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/archivo-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/static/fonts/archivo-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/archivo-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/static/fonts/archivo-latin-800-normal.woff2") format("woff2");
+}
+
+/* Space Mono (labels/dates/kickers) — 400/700 */
+@font-face {
+  font-family: "Space Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/space-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/space-mono-latin-700-normal.woff2") format("woff2");
+}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{# Accueil — gabarit de fondation (P0). Le contenu réel (hero, stats, à l'affiche,
+   agenda, actus, asso, CTA) sera décliné de la maquette en P3. #}
+
+{% block content %}
+<section class="border-b-2 border-ink py-[clamp(50px,9vw,74px)]">
+  <div class="wrap">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red-deep font-bold rv">Association culturelle · Annecy</p>
+    <h1 class="font-display font-black text-[clamp(2.6rem,8vw,6.1rem)] leading-[.96] tracking-[-.02em] mt-[18px] max-w-[13ch] rv">
+      On fait vibrer le <em class="italic text-red">spectacle vivant</em>.
+    </h1>
+    <p class="max-w-[46ch] mt-[22px] text-[clamp(1rem,2vw,1.12rem)] text-ink-soft rv">
+      Concerts, performances et fêtes de quartier à Annecy. Squelette de fondation —
+      le site complet arrive au fil de la roadmap.
+    </p>
+
+    {# Bandeau signature Waveform (cf DESIGN.md §7). #}
+    <div class="relative mt-[clamp(34px,6vw,46px)] border-[3px] border-ink bg-paper rv">
+      <div class="waveform h-[clamp(80px,16vw,120px)]" data-baseline="true" data-animated="true"></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

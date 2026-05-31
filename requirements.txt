@@ -1,0 +1,3 @@
+# Dépendances de production (versions figées). Outillage de test/lint : requirements-dev.txt.
+Django==5.2.14
+python-decouple==3.8

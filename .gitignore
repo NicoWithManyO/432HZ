@@ -31,8 +31,9 @@ db.sqlite3*
 # Médias uploadés
 /media/
 
-# CSS compilé (généré par Tailwind)
+# Artefacts du build front (régénérés par `npm run build`)
 /static/css/app.css
+/static/fonts/
 
 # Node / build front
 node_modules/
