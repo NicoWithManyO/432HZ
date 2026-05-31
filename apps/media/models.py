@@ -21,6 +21,9 @@ class Image(UUIDModel):
     file = models.ImageField(upload_to=image_upload_to)
     alt = models.CharField(max_length=200, blank=True)
     title = models.CharField(max_length=200, blank=True, help_text="Titre interne (médiathèque).")
+    caption = models.CharField(
+        max_length=255, blank=True, help_text="Légende affichée avec l'image (galerie, public)."
+    )
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,

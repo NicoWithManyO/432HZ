@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image as PILImage
 
-from apps.media.forms import ImageUploadForm
+from apps.media.forms import ImageMetaForm, ImageUploadForm
 from apps.media.models import Image, image_upload_to
 from apps.media.validators import MAX_IMAGE_SIZE, validate_image_file
 
@@ -73,3 +73,17 @@ def test_upload_form_saves_valid_image():
     image = form.save()
     assert Image.objects.filter(pk=image.pk).exists()
     assert image.file.name.endswith(".jpg")
+
+
+@pytest.mark.django_db
+def test_meta_form_persists_caption():
+    # La légende (médiathèque) est éditable et persistée via le form de métadonnées.
+    image = Image.objects.create(alt="Affiche")
+    form = ImageMetaForm(
+        data={"alt": "Affiche", "title": "Concert", "caption": "Concert d'ouverture, 2024"},
+        instance=image,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+    image.refresh_from_db()
+    assert image.caption == "Concert d'ouverture, 2024"

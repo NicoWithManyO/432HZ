@@ -9,7 +9,7 @@ class ImageUploadForm(forms.ModelForm):
 
     class Meta:
         model = Image
-        fields = ["file", "alt", "title"]
+        fields = ["file", "alt", "title", "caption"]
 
     def clean_file(self):
         file = self.cleaned_data["file"]
@@ -22,4 +22,4 @@ class ImageMetaForm(forms.ModelForm):
 
     class Meta:
         model = Image
-        fields = ["alt", "title"]
+        fields = ["alt", "title", "caption"]

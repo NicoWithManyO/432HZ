@@ -26,8 +26,13 @@
            alt="{{ image.alt }}" loading="lazy"
            class="w-full aspect-[4/3] object-cover border-b-2 border-ink">
     </a>
-    <div class="p-2 font-mono text-[.66rem] uppercase tracking-[.08em] text-muted truncate">
-      {{ image.title|default:image.alt|default:"Sans titre" }}
+    <div class="p-2">
+      <div class="font-mono text-[.66rem] uppercase tracking-[.08em] text-muted truncate">
+        {{ image.title|default:image.alt|default:"Sans titre" }}
+      </div>
+      {% if image.caption %}
+      <div class="text-[.78rem] text-ink-soft truncate mt-0.5">{{ image.caption }}</div>
+      {% endif %}
     </div>
   </li>
   {% endfor %}
