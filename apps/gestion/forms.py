@@ -7,8 +7,6 @@ from apps.events.models import Event
 from apps.media.models import Image
 from apps.news.models import News
 
-from .sanitize import clean_html
-
 # Format attendu/rendu par l'input HTML <input type="datetime-local">.
 _DATETIME_LOCAL = "%Y-%m-%dT%H:%M"
 
@@ -104,10 +102,6 @@ class EventForm(GalleryFormMixin, forms.ModelForm):
         self.fields["starts_at"].input_formats = [_DATETIME_LOCAL]
         self.fields["ends_at"].input_formats = [_DATETIME_LOCAL]
 
-    def clean_description(self):
-        # Barrière serveur : on ne stocke que du HTML léger sanitizé.
-        return clean_html(self.cleaned_data["description"])
-
 
 class InvitationForm(forms.ModelForm):
     """Création d'une invitation. L'e-mail est purement indicatif (le lien est
@@ -134,7 +128,3 @@ class NewsForm(GalleryFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Slug optionnel : dérivé du titre à la création s'il est laissé vide.
         self.fields["slug"].required = False
-
-    def clean_description(self):
-        # Barrière serveur : on ne stocke que du HTML léger sanitizé.
-        return clean_html(self.cleaned_data["description"])

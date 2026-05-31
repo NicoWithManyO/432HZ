@@ -1,6 +1,6 @@
 // Îlot d'édition riche (Tiptap) greffé sur les <textarea data-richtext> de la gestion.
 // Amélioration progressive : sans JS, le <textarea> natif reste pleinement utilisable.
-// On ne produit que l'allowlist de `apps/gestion/sanitize.py`, et le HTML est de toute
+// On ne produit que l'allowlist de `apps/common/sanitize.py`, et le HTML est de toute
 // façon re-sanitizé côté serveur (nh3) au save : le client n'est jamais la barrière.
 
 import { Editor } from "@tiptap/core";
@@ -9,10 +9,12 @@ import StarterKit from "@tiptap/starter-kit";
 // Pose / retire un lien via une simple invite (pas d'UI dédiée en v1).
 function toggleLink(editor) {
   const previous = editor.getAttributes("link").href;
-  const url = window.prompt("Adresse du lien", previous || "https://");
-  if (url === null || url === "https://") return; // annulé / placeholder laissé tel quel
+  const answer = window.prompt("Adresse du lien", previous || "https://");
+  if (answer === null) return; // invite annulée : on ne touche à rien
+  const url = answer.trim();
   const chain = editor.chain().focus().extendMarkRange("link");
-  if (url === "") {
+  // Vide ou placeholder laissé tel quel ⇒ on retire le lien (jamais de href « https:// » seul).
+  if (url === "" || url === "https://") {
     chain.unsetLink().run();
   } else {
     chain.setLink({ href: url }).run();

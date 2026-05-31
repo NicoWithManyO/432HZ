@@ -6,6 +6,7 @@ from apps.common.models import (
     TimeStampedModel,
     UUIDModel,
 )
+from apps.common.sanitize import clean_html
 
 
 class News(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
@@ -31,6 +32,12 @@ class News(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
     class Meta:
         verbose_name_plural = "news"
         ordering = ["-published_at", "-created_at"]
+
+    def save(self, *args, **kwargs):
+        # Barrière XSS au niveau modèle : la description est sanitizée quel que soit
+        # le chemin d'écriture (form, shell, import futur). Idempotent.
+        self.description = clean_html(self.description)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

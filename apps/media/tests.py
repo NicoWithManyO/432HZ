@@ -46,6 +46,18 @@ def test_validate_rejects_oversize_file():
         validate_image_file(upload)
 
 
+def test_validate_rejects_too_many_pixels(monkeypatch):
+    # Borne en pixels abaissée pour le test (sinon il faudrait générer une image énorme).
+    monkeypatch.setattr("apps.media.validators.MAX_IMAGE_PIXELS", 4)
+    with pytest.raises(ValidationError):
+        validate_image_file(make_image_file(size=(64, 64)))  # 4096 px > 4
+
+
+def test_model_field_carries_validator():
+    # Filet defense-in-depth : la validation vit aussi sur le champ (chemins hors form).
+    assert validate_image_file in Image._meta.get_field("file").validators
+
+
 def test_upload_to_randomizes_filename():
     path = image_upload_to(None, "Mon Affiche.JPG")
     # Nom randomisé (32 hexa), extension minuscule conservée, rangé par mois.

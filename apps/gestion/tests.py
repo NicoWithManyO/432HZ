@@ -11,9 +11,9 @@ from PIL import Image as PILImage
 
 from apps.accounts.models import OWNER, Invitation, Profile
 from apps.common.models import PUBLISHED
-from apps.events.models import Event
+from apps.common.sanitize import clean_html
+from apps.events.models import Event, EventImage
 from apps.gestion.forms import EventForm
-from apps.gestion.sanitize import clean_html
 from apps.media.models import Image
 from apps.news.models import News
 
@@ -290,6 +290,18 @@ def test_quick_upload_rejects_non_image(validated_client, settings, tmp_path):
     assert Image.objects.count() == 0
 
 
+@pytest.mark.django_db
+def test_media_delete_confirm_lists_usage(validated_client):
+    # La page de confirmation avertit des events/actus dont l'image sera retirée (CASCADE).
+    image = Image.objects.create(alt="affiche")
+    event = Event.objects.create(title="Concert lié", starts_at=timezone.now())
+    EventImage.objects.create(event=event, image=image, order=0)
+    response = validated_client.get(reverse("gestion:media-delete", args=[image.pk]))
+    assert response.status_code == 200
+    assert list(response.context["events_using"]) == [event]
+    assert "Concert lié" in response.content.decode()
+
+
 # --- Vues actus ---
 
 
@@ -391,6 +403,16 @@ def test_invitation_regenerate_changes_token(owner_client):
     owner_client.post(reverse("gestion:invitation-regenerate", args=[inv.pk]))
     inv.refresh_from_db()
     assert inv.token != old_token
+
+
+@pytest.mark.django_db
+def test_invitation_regenerate_skips_used(owner_client):
+    # Régénérer une invitation déjà consommée n'émet pas un nouveau lien (mort) : no-op.
+    inv = Invitation.objects.create(used_at=timezone.now())
+    old_token = inv.token
+    owner_client.post(reverse("gestion:invitation-regenerate", args=[inv.pk]))
+    inv.refresh_from_db()
+    assert inv.token == old_token
 
 
 @pytest.mark.django_db

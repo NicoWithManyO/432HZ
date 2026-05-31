@@ -7,7 +7,21 @@
 <div class="max-w-xl mx-auto">
   <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Médiathèque</span>
   <h1 class="font-display font-black text-[clamp(1.8rem,5vw,2.6rem)] leading-none mt-2 mb-4">Supprimer ce média ?</h1>
-  <p class="text-ink-soft mb-6">Cette action est définitive. Le média sera retiré des events et actus qui l'utilisent.</p>
+  <p class="text-ink-soft mb-6">Cette action est définitive.</p>
+
+  {% if events_using or news_using %}
+  <div class="border-2 border-red bg-paper-2 p-4 mb-6">
+    <p class="font-bold text-red mb-2">Ce média est utilisé. Il sera retiré de :</p>
+    <ul class="list-disc pl-5 text-ink-soft text-[.92rem] space-y-1">
+      {% for event in events_using %}
+      <li>Event · {{ event.title }}</li>
+      {% endfor %}
+      {% for news in news_using %}
+      <li>Actu · {{ news.title }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 
   {% if object.file %}
   {% thumbnail object.file "card2x" as preview %}

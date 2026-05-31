@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -64,6 +65,19 @@ class ImageDeleteView(ValidatedRequiredMixin, DeleteView):
     model = Image
     template_name = "gestion/media/confirm_delete.html"
     success_url = reverse_lazy("gestion:media-list")
+
+    def get_context_data(self, **kwargs):
+        # La suppression d'un média le retire de force des galeries (FK en CASCADE) :
+        # on liste les events/actus impactés pour que l'éditeur supprime en connaissance.
+        context = super().get_context_data(**kwargs)
+        image = self.object
+        context["events_using"] = Event.objects.filter(
+            Q(cover=image) | Q(gallery=image)
+        ).distinct()
+        context["news_using"] = News.objects.filter(
+            Q(cover=image) | Q(gallery=image)
+        ).distinct()
+        return context
 
 
 class ImageQuickUploadView(ValidatedRequiredMixin, View):
@@ -247,7 +261,11 @@ class AccountListView(OwnerRequiredMixin, CreateView):
 
 class InvitationRegenerateView(OwnerRequiredMixin, View):
     def post(self, request, pk):
-        get_object_or_404(Invitation, pk=pk).regenerate()
+        invitation = get_object_or_404(Invitation, pk=pk)
+        # Une invitation consommée le reste : régénérer ne ferait qu'émettre un lien
+        # mort (le nouveau jeton resterait `used`). On ne touche que les invitations vives.
+        if not invitation.is_used:
+            invitation.regenerate()
         return redirect("gestion:accounts-list")
 
 

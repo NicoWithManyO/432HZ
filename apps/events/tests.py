@@ -14,6 +14,18 @@ def test_slug_is_derived_from_title():
 
 
 @pytest.mark.django_db
+def test_description_sanitized_on_save():
+    # Barrière XSS au niveau modèle : vaut quel que soit le chemin d'écriture (ici, ORM direct).
+    event = Event.objects.create(
+        title="x",
+        starts_at=timezone.now(),
+        description="<p>ok</p><script>alert(1)</script>",
+    )
+    assert "<script>" not in event.description
+    assert "<p>ok</p>" in event.description
+
+
+@pytest.mark.django_db
 def test_slug_stays_unique_for_duplicate_titles():
     first = Event.objects.create(title="Même titre", starts_at=timezone.now())
     second = Event.objects.create(title="Même titre", starts_at=timezone.now())

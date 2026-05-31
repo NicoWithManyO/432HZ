@@ -7,6 +7,8 @@ from django.utils import timezone
 
 from apps.common.models import UUIDModel
 
+from .validators import validate_image_file
+
 
 def image_upload_to(instance, filename):
     """Range les médias par mois et randomise le nom (anti-collision, pas de fuite
@@ -18,7 +20,7 @@ def image_upload_to(instance, filename):
 class Image(UUIDModel):
     """Image de la médiathèque, réutilisable comme cover ou en galerie."""
 
-    file = models.ImageField(upload_to=image_upload_to)
+    file = models.ImageField(upload_to=image_upload_to, validators=[validate_image_file])
     alt = models.CharField(max_length=200, blank=True)
     title = models.CharField(max_length=200, blank=True, help_text="Titre interne (médiathèque).")
     caption = models.CharField(
