@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "apps.pages",
     # Présentation de l'admin convivial (namespace url `gestion`)
     "apps.gestion",
+    # Vignettes WebP/srcset (médiathèque)
+    "easy_thumbnails",
 ]
 
 MIDDLEWARE = [
@@ -126,5 +128,19 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+
+# Vignettes (easy-thumbnails) — sortie WebP partout (l'extension pilote le format
+# de sauvegarde), recadrage centré sur le sujet. Les alias `card`/`card2x`
+# alimentent le srcset de la grille médiathèque (1x / 2x).
+
+THUMBNAIL_EXTENSION = "webp"
+THUMBNAIL_ALIASES = {
+    "": {
+        "card": {"size": (320, 240), "crop": "smart"},
+        "card2x": {"size": (640, 480), "crop": "smart"},
+    },
+}
+
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

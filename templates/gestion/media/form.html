@@ -1,0 +1,35 @@
+{% extends "gestion/base_gestion.html" %}
+{% load static thumbnail %}
+
+{% block title %}{% if form.instance.pk %}Modifier un média{% else %}Ajouter une image{% endif %} · Gestion 432 Hz{% endblock %}
+
+{% block gestion %}
+<div class="max-w-xl mx-auto">
+  <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Médiathèque</span>
+  <h1 class="font-display font-black text-[clamp(1.8rem,5vw,2.6rem)] leading-none mt-2 mb-6">
+    {% if form.instance.pk %}Modifier le média{% else %}Ajouter une image{% endif %}
+  </h1>
+
+  {% if form.instance.pk and form.instance.file %}
+  {% thumbnail form.instance.file "card2x" as preview %}
+  <img src="{{ preview.url }}" alt="{{ form.instance.alt }}"
+       class="w-full max-w-sm border-2 border-ink mb-6">
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="gestion-form flex flex-col gap-4" data-upload-form>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="flex items-center gap-3 mt-2">
+      <button type="submit" class="btn btn--red">Enregistrer</button>
+      <a href="{% url 'gestion:media-list' %}" class="nav-link">Annuler</a>
+      {% if form.instance.pk %}
+      <a href="{% url 'gestion:media-delete' form.instance.pk %}" class="nav-link text-red-deep ml-auto">Supprimer</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{% static 'js/gestion.js' %}"></script>
+{% endblock %}

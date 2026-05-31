@@ -1,0 +1,51 @@
+{% extends "gestion/base_gestion.html" %}
+{% load thumbnail %}
+
+{% block title %}Médiathèque · Gestion 432 Hz{% endblock %}
+
+{% block gestion %}
+<div class="flex items-end justify-between flex-wrap gap-4 mb-8">
+  <div>
+    <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Médiathèque</span>
+    <h1 class="font-display font-black text-[clamp(2rem,5vw,3rem)] leading-none mt-2">Médias</h1>
+  </div>
+  <a href="{% url 'gestion:media-upload' %}" class="btn btn--red">Ajouter une image</a>
+</div>
+
+{% if images %}
+<ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+  {% for image in images %}
+  <li class="border-2 border-ink bg-paper-2">
+    <a href="{% url 'gestion:media-update' image.pk %}" class="block">
+      {% thumbnail image.file "card" as card %}
+      {% thumbnail image.file "card2x" as card2x %}
+      <img src="{{ card.url }}"
+           srcset="{{ card.url }} 320w, {{ card2x.url }} 640w"
+           sizes="(min-width: 1024px) 280px, (min-width: 640px) 30vw, 45vw"
+           width="{{ card.width }}" height="{{ card.height }}"
+           alt="{{ image.alt }}" loading="lazy"
+           class="w-full aspect-[4/3] object-cover border-b-2 border-ink">
+    </a>
+    <div class="p-2 font-mono text-[.66rem] uppercase tracking-[.08em] text-muted truncate">
+      {{ image.title|default:image.alt|default:"Sans titre" }}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if is_paginated %}
+<nav class="flex items-center gap-4 mt-8 font-mono text-[.72rem] uppercase tracking-[.1em]" aria-label="Pagination">
+  {% if page_obj.has_previous %}
+  <a class="nav-link" href="?page={{ page_obj.previous_page_number }}">← Précédent</a>
+  {% endif %}
+  <span class="text-muted">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a class="nav-link" href="?page={{ page_obj.next_page_number }}">Suivant →</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<p class="text-ink-soft">Aucun média pour l'instant. <a href="{% url 'gestion:media-upload' %}" class="underline decoration-red decoration-2">Ajoute une première image.</a></p>
+{% endif %}
+{% endblock %}

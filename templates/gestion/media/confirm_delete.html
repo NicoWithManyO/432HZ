@@ -1,0 +1,23 @@
+{% extends "gestion/base_gestion.html" %}
+{% load thumbnail %}
+
+{% block title %}Supprimer un média · Gestion 432 Hz{% endblock %}
+
+{% block gestion %}
+<div class="max-w-xl mx-auto">
+  <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Médiathèque</span>
+  <h1 class="font-display font-black text-[clamp(1.8rem,5vw,2.6rem)] leading-none mt-2 mb-4">Supprimer ce média ?</h1>
+  <p class="text-ink-soft mb-6">Cette action est définitive. Le média sera retiré des events et actus qui l'utilisent.</p>
+
+  {% if object.file %}
+  {% thumbnail object.file "card2x" as preview %}
+  <img src="{{ preview.url }}" alt="{{ object.alt }}" class="w-full max-w-sm border-2 border-ink mb-6">
+  {% endif %}
+
+  <form method="post" class="flex items-center gap-3">
+    {% csrf_token %}
+    <button type="submit" class="btn btn--red">Supprimer définitivement</button>
+    <a href="{% url 'gestion:media-list' %}" class="nav-link">Annuler</a>
+  </form>
+</div>
+{% endblock %}
