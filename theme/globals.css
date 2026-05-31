@@ -86,13 +86,17 @@ html.js .rv.pending {
   transform: translateY(18px);
 }
 
-/* Ticker : défilement continu (piste dupliquée ×2 → boucle sur -50%). */
+/* Ticker : défilement continu. La piste répète la phrase 8 fois (cf base.html) pour
+   toujours dépasser la largeur du viewport (sinon du vide apparaît à droite). On translate
+   d'EXACTEMENT une phrase (-100% / 8 = -12.5%) : comme les 8 phrases sont identiques, le
+   retour à 0 est invisible (boucle sans raccord), et la vitesse reste constante.
+   ⚠ Si on change le nombre de phrases dans base.html, ajuster ce pourcentage (-100% / N). */
 @keyframes ticker-slide {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(-12.5%);
   }
 }
 
@@ -150,6 +154,10 @@ html.js .rv.pending {
   .burger.is-open span:nth-child(3) {
     transform: translateY(-7.5px) rotate(-45deg);
   }
+  /* Variante claire : burger posé sur la topbar sombre de la gestion. */
+  .burger--light span {
+    background: var(--paper);
+  }
 
   /* Overlay plein écran (cf DESIGN.md §5.5). */
   .mobile-menu {
@@ -201,9 +209,12 @@ html.js .rv.pending {
     color: var(--muted);
     margin-bottom: 6px;
   }
-  .gestion-form input,
-  .gestion-form select,
-  .gestion-form textarea {
+  /* `:not(.sr-only)` : la largeur 100% ne doit pas s'appliquer aux champs masqués
+     (textarea remplacé par Tiptap, input file caché dans le label) — sinon, plus
+     spécifique que `.sr-only`, elle les rendait larges et en débordement horizontal. */
+  .gestion-form input:not(.sr-only),
+  .gestion-form select:not(.sr-only),
+  .gestion-form textarea:not(.sr-only) {
     width: 100%;
     border: 2px solid var(--ink);
     background: var(--paper);

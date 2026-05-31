@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# Layout de l'admin convivial : même charte « affiche », topbar sombre dédiée.
-   Pas de ticker ni de nav publique. La nav gestion n'apparaît que pour un profil
-   validé (les pages login/invitation, anonymes, n'affichent que le logo). #}
+{% comment %}
+  Layout de l'admin convivial : même charte « affiche », topbar sombre dédiée.
+  Pas de ticker ni de nav publique. La nav gestion n'apparaît que pour un profil
+  validé (les pages login/invitation, anonymes, n'affichent que le logo).
+{% endcomment %}
 
 {% block ticker_bar %}{% endblock %}
 
@@ -11,12 +13,12 @@
 <header class="sticky top-0 z-[70] bg-ink text-paper border-b-2 border-ink">
   <div class="wrap flex items-center justify-between gap-4 min-h-[var(--hdr)] py-3">
     <a href="{% url 'gestion:dashboard' %}" class="flex items-center gap-3 min-w-0">
-      <img src="{% static 'brand/logo-432hz.png' %}" alt="432 Hz" class="h-[clamp(34px,6vw,42px)] w-auto">
-      <span class="font-mono text-[.6rem] tracking-[.18em] uppercase text-paper/70 border-l-2 border-red pl-[9px]">Gestion</span>
+      <img src="{% static 'brand/logo-432hz-light.png' %}" alt="432 Hz" class="h-[clamp(34px,6vw,42px)] w-auto">
+      <span class="font-mono text-[.6rem] tracking-[.18em] uppercase text-paper/70 border-l-2 border-red pl-[9px] whitespace-nowrap">Gestion</span>
     </a>
 
     {% if user.is_authenticated and user.profile.is_validated %}
-    <nav class="flex items-center gap-[clamp(14px,2.4vw,28px)] text-[.9rem]" aria-label="Navigation gestion">
+    <nav class="max-[880px]:hidden flex items-center gap-[clamp(14px,2.4vw,28px)] text-[.9rem]" aria-label="Navigation gestion">
       <a class="nav-link" href="{% url 'gestion:dashboard' %}">Tableau de bord</a>
       <a class="nav-link" href="{% url 'gestion:event-list' %}">Events</a>
       <a class="nav-link" href="{% url 'gestion:news-list' %}">Actus</a>
@@ -30,8 +32,35 @@
         <button type="submit" class="nav-link">Déconnexion</button>
       </form>
     </nav>
+
+    <button type="button" data-burger
+            class="burger burger--light max-[880px]:flex hidden flex-col gap-[5px] p-[10px] bg-transparent border-0 cursor-pointer z-[80]"
+            aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu">
+      <span></span><span></span><span></span>
+    </button>
     {% endif %}
   </div>
+
+  {% if user.is_authenticated and user.profile.is_validated %}
+  {# Overlay menu mobile (≤ 880px) — réutilise le câblage burger de main.js. #}
+  <div id="mobile-menu"
+       class="mobile-menu fixed inset-0 z-[60] bg-paper text-ink flex flex-col justify-center px-[var(--gutter)] pt-[calc(var(--hdr)+24px)] pb-10 overflow-y-auto"
+       aria-hidden="true">
+    <nav class="flex flex-col gap-1" aria-label="Navigation gestion mobile">
+      <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:dashboard' %}">Tableau de bord</a>
+      <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:event-list' %}">Events</a>
+      <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:news-list' %}">Actus</a>
+      <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:media-list' %}">Médiathèque</a>
+      {% if user.profile.is_owner %}
+      <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:accounts-list' %}">Comptes</a>
+      {% endif %}
+      <form method="post" action="{% url 'gestion:logout' %}" class="mt-7">
+        {% csrf_token %}
+        <button type="submit" class="w-full bg-red text-paper border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[16px]">Déconnexion</button>
+      </form>
+    </nav>
+  </div>
+  {% endif %}
 </header>
 {% endblock %}
 

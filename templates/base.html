@@ -18,12 +18,20 @@
   <a class="skip-link" href="#main">Aller au contenu</a>
 
   {% block ticker_bar %}
-  {# Ticker — bandeau noir défilant (piste dupliquée ×2 pour la boucle). #}
-  <div class="ticker bg-ink text-paper overflow-hidden whitespace-nowrap border-b-2 border-ink" aria-hidden="true">
-    <div class="animate-ticker inline-block py-2 font-mono uppercase tracking-[.18em] text-[.74rem]">
+  {% comment %}
+    Ticker — bandeau noir défilant. Deux copies identiques côte à côte ; l'animation
+    translate de -50% (soit exactement une copie) → boucle sans raccord. La piste est en
+    flex (les blancs HTML entre items flex sont ignorés : pas d'espace parasite donc pas
+    de « trou »), et les « + » portent leur propre marge (espacement constant, raccord compris).
+  {% endcomment %}
+  <div class="ticker bg-ink text-paper overflow-hidden border-b-2 border-ink" aria-hidden="true">
+    <div class="animate-ticker flex w-max py-2 font-mono uppercase tracking-[.18em] text-[.74rem]">
       {% block ticker %}
-        {% for i in "12" %}
-          <span class="mx-[26px]">Spectacle vivant <b class="text-red font-normal">+</b> Concerts <b class="text-red font-normal">+</b> Performances <b class="text-red font-normal">+</b> Fêtes de quartier <b class="text-red font-normal">+</b> Annecy</span>
+        {# 8 phrases : la piste dépasse toujours le viewport (cf keyframe -12.5% = -100%/8). #}
+        {% for i in "12345678" %}
+        <span class="flex shrink-0 items-center">
+          <span>Spectacle vivant</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Concerts</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Performances</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Fêtes de quartier</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Annecy</span><b class="text-red font-normal mx-[1.3em]">+</b>
+        </span>
         {% endfor %}
       {% endblock %}
     </div>
