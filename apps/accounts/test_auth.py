@@ -2,11 +2,13 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from apps.accounts.models import EDITOR, Invitation, Profile
 
 User = get_user_model()
-PWD = "Vibrant-432hz!"
+# Mot de passe de test généré à l'exécution (aucun littéral type secret dans le dépôt).
+PWD = get_random_string(12)
 
 
 @pytest.mark.django_db

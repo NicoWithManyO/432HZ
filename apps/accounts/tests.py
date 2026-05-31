@@ -6,8 +6,12 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from apps.accounts.models import OWNER, EditLock, Invitation, Profile
+
+# Mot de passe de test généré à l'exécution (aucun littéral type secret dans le dépôt).
+PASSWORD = get_random_string(12)
 
 
 @pytest.mark.django_db
@@ -16,23 +20,23 @@ def test_bootstrap_owner_creates_superuser():
         "bootstrap_owner",
         username="nico",
         email="nico@example.com",
-        password="s3cret-pass!",
+        password=PASSWORD,
     )
 
     user = get_user_model().objects.get(username="nico")
     assert user.is_superuser
     assert user.is_staff
-    assert user.check_password("s3cret-pass!")
+    assert user.check_password(PASSWORD)
     assert user.profile.role == OWNER
     assert user.profile.is_validated
 
 
 @pytest.mark.django_db
 def test_bootstrap_owner_refuses_existing_username():
-    get_user_model().objects.create_user(username="nico", password="x")
+    get_user_model().objects.create_user(username="nico", password=PASSWORD)
 
     with pytest.raises(CommandError):
-        call_command("bootstrap_owner", username="nico", password="other")
+        call_command("bootstrap_owner", username="nico", password=PASSWORD)
 
 
 @pytest.mark.django_db
@@ -46,7 +50,7 @@ def test_bootstrap_owner_rejects_weak_password():
 
 @pytest.mark.django_db
 def test_profile_is_owner():
-    user = get_user_model().objects.create_user(username="o", password="x")
+    user = get_user_model().objects.create_user(username="o", password=PASSWORD)
     profile = Profile.objects.create(user=user, role=OWNER, is_validated=True)
     assert profile.is_owner
 
@@ -74,7 +78,7 @@ def test_invitation_validity_states():
 
 @pytest.mark.django_db
 def test_edit_lock_is_active_while_heartbeat_recent():
-    user = get_user_model().objects.create_user(username="h", password="x")
+    user = get_user_model().objects.create_user(username="h", password=PASSWORD)
     lock = EditLock.objects.create(object_type="event", object_id=uuid.uuid4(), holder=user)
     assert lock.is_active
 
