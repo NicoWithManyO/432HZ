@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+build/
+dist/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Secrets (python-decouple) — jamais commités
+.env
+.env.*
+!.env.example
+
+# Django
+*.log
+local_settings.py
+staticfiles/
+
+# Base SQLite (+ fichiers WAL/SHM)
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+db.sqlite3*
+
+# Médias uploadés
+/media/
+
+# CSS compilé (généré par Tailwind)
+/static/css/app.css
+
+# Node / build front
+node_modules/
+.parcel-cache/
+.vite/
+
+# Outils & éditeurs
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

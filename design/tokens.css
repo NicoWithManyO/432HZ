@@ -1,0 +1,24 @@
+/* Tokens de design — source unique de la charte 432 Hz (cf DESIGN.md §2, §3, §5).
+   À importer en premier dans la feuille de styles globale. Ne jamais coder une
+   couleur/typo/espacement « en dur » ailleurs : on passe toujours par ces vars. */
+:root {
+  /* Couleurs — noir + crème + rouge, RIEN d'autre. */
+  --paper: #f4eee1; /* fond principal (papier crème) */
+  --paper-2: #ebe3d2; /* fond alterné, hover de lignes */
+  --ink: #15120e; /* encre / texte / bordures / fonds sombres */
+  --ink-soft: #3a342b; /* texte secondaire sur fond clair */
+  --muted: #7a7164; /* labels, légendes, métadonnées */
+  --red: #f4322e; /* accent unique (CTA, kickers, onde, hover) */
+  --red-deep: #ce241f; /* rouge en petit texte sur crème (lisibilité) */
+  --line: rgba(21, 18, 14, 0.16); /* filets discrets */
+
+  /* Typographie */
+  --display: "Fraunces", Georgia, serif; /* titres — chaleureux, « spectacle vivant » */
+  --grotesk: "Archivo", system-ui, sans-serif; /* corps / UI */
+  --mono: "Space Mono", monospace; /* labels, dates, kickers — uppercase + tracking */
+
+  /* Espacements fluides */
+  --gutter: clamp(16px, 4vw, 24px); /* padding latéral du conteneur */
+  --section-y: clamp(44px, 8vw, 66px); /* respiration verticale des sections */
+  --hdr: 74px; /* hauteur header (sert au scroll-margin des ancres) */
+}

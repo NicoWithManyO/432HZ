@@ -1,0 +1,126 @@
+/* Styles globaux de la charte 432 Hz « affiche imprimée ».
+   Pipeline conseillé (monolithe Django, sans bundler JS lourd) : Tailwind CLI
+   compile ce fichier → static/css/app.css en scannant templates/**/*.html.
+   tokens.css fournit les variables ; ici on pose la base + les utilitaires charte. */
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--grotesk);
+    font-size: clamp(15.5px, 1.4vw, 17px);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden; /* filet anti-scroll horizontal (pas une excuse pour déborder) */
+  }
+
+  /* Grain papier global discret (cf DESIGN.md §0, §6). */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Focus clavier rouge visible PARTOUT (les ombres dures ne tiennent pas lieu de focus). */
+  :focus-visible {
+    outline: 3px solid var(--red);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Les ancres ne passent pas sous le header sticky. */
+  :target {
+    scroll-margin-top: calc(var(--hdr) + 8px);
+  }
+}
+
+/* Lien d'évitement clavier : hors écran jusqu'au focus. */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -64px;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 10px 16px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: top 0.18s ease;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+/* Reveal au scroll : le contenu reste VISIBLE par défaut (premier paint complet, pas
+   d'écran blanc). Seuls les éléments sous la ligne de flottaison sont masqués par JS
+   (classe `pending`) puis révélés à l'entrée dans le viewport (IntersectionObserver). */
+.rv {
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+html.js .rv.pending {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+/* Ticker : défilement continu (piste dupliquée ×2 → boucle sur -50%). */
+@keyframes ticker-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker-slide 28s linear infinite;
+  will-change: transform;
+}
+
+/* Respect strict de prefers-reduced-motion : coupe animations, ticker, scroll doux,
+   reveals (état final immédiat). Obligatoire (cf DESIGN.md §5.9, §9). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-ticker {
+    animation: none;
+  }
+
+  html.js .rv.pending {
+    opacity: 1;
+    transform: none;
+  }
+}
