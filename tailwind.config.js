@@ -1,6 +1,10 @@
 /** Config Tailwind de la charte 432 Hz (monolithe Django).
  *  Les couleurs/ombres pointent sur les CSS vars de tokens.css (source unique).
- *  `content` scanne les templates Django (racine + apps) et le JS de static/.
+ *  `content` scanne les templates Django (racine + apps) et le JS source
+ *  (static/ écrit à la main + theme/js/ source des bundles esbuild).
+ *  On exclut les bundles esbuild de static/js/ : leur source est déjà scannée
+ *  via theme/js/, et scanner le minifié injecte des classes parasites + rend
+ *  app.css non-déterministe (dépend de si le bundle existe au moment du scan).
  */
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -8,6 +12,8 @@ export default {
     "./templates/**/*.html",
     "./apps/**/templates/**/*.html",
     "./static/js/**/*.js",
+    "!./static/js/gestion-editor.js",
+    "./theme/js/**/*.js",
   ],
   theme: {
     extend: {

@@ -245,6 +245,45 @@ html.js .rv.pending {
     background: var(--red);
     color: var(--paper);
   }
+
+  /* Zone d'édition riche (Tiptap) : le reset Tailwind aplatit titres et listes,
+     on rend le balisage de l'allowlist lisible pendant la saisie. */
+  .prose-editor h2 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.4rem;
+    line-height: 1.1;
+    margin: 0.6em 0 0.3em;
+  }
+  .prose-editor h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin: 0.5em 0 0.3em;
+  }
+  .prose-editor p {
+    margin: 0.5em 0;
+  }
+  .prose-editor ul,
+  .prose-editor ol {
+    margin: 0.5em 0;
+    padding-left: 1.4em;
+  }
+  .prose-editor ul {
+    list-style: disc;
+  }
+  .prose-editor ol {
+    list-style: decimal;
+  }
+  .prose-editor a {
+    color: var(--red-deep);
+    text-decoration: underline;
+  }
+  .prose-editor blockquote {
+    border-left: 3px solid var(--red);
+    padding-left: 0.8em;
+    color: var(--ink-soft);
+  }
 }
 
 /* Respect strict de prefers-reduced-motion : coupe animations, ticker, scroll doux,

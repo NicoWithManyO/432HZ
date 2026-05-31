@@ -34,6 +34,7 @@ db.sqlite3*
 # Artefacts du build front (régénérés par `npm run build`)
 /static/css/app.css
 /static/fonts/
+/static/js/gestion-editor.js
 
 # Node / build front
 node_modules/
