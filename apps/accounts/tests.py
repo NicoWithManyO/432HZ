@@ -1,7 +1,13 @@
+import uuid
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.utils import timezone
+
+from apps.accounts.models import OWNER, EditLock, Invitation, Profile
 
 
 @pytest.mark.django_db
@@ -17,6 +23,8 @@ def test_bootstrap_owner_creates_superuser():
     assert user.is_superuser
     assert user.is_staff
     assert user.check_password("s3cret-pass!")
+    assert user.profile.role == OWNER
+    assert user.profile.is_validated
 
 
 @pytest.mark.django_db
@@ -34,3 +42,42 @@ def test_bootstrap_owner_rejects_weak_password():
         call_command("bootstrap_owner", username="nico", password="123")
 
     assert not get_user_model().objects.filter(username="nico").exists()
+
+
+@pytest.mark.django_db
+def test_profile_is_owner():
+    user = get_user_model().objects.create_user(username="o", password="x")
+    profile = Profile.objects.create(user=user, role=OWNER, is_validated=True)
+    assert profile.is_owner
+
+
+@pytest.mark.django_db
+def test_invitation_token_is_generated_and_unique():
+    a = Invitation.objects.create()
+    b = Invitation.objects.create()
+    assert a.token and b.token
+    assert a.token != b.token
+
+
+@pytest.mark.django_db
+def test_invitation_validity_states():
+    fresh = Invitation.objects.create()
+    assert fresh.is_valid
+
+    used = Invitation.objects.create(used_at=timezone.now())
+    assert not used.is_valid
+
+    expired = Invitation.objects.create(expires_at=timezone.now() - timedelta(days=1))
+    assert expired.is_expired
+    assert not expired.is_valid
+
+
+@pytest.mark.django_db
+def test_edit_lock_is_active_while_heartbeat_recent():
+    user = get_user_model().objects.create_user(username="h", password="x")
+    lock = EditLock.objects.create(object_type="event", object_id=uuid.uuid4(), holder=user)
+    assert lock.is_active
+
+    # Heartbeat ancien (> 2 min) → verrou considéré relâché.
+    lock.heartbeat_at = timezone.now() - timedelta(minutes=5)
+    assert not lock.is_active

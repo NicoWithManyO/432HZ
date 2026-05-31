@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord · Gestion 432 Hz{% endblock %}
+
+{% block content %}
+<section class="wrap py-[clamp(40px,8vw,80px)]">
+  <h1 class="font-display font-black text-4xl mb-2">Tableau de bord</h1>
+  <p class="text-muted mb-6">Connecté·e en tant que <strong>{{ user.username }}</strong> ({{ user.profile.get_role_display }}).</p>
+  {# Raccourcis events/actus et médiathèque : P2. #}
+  <form method="post" action="{% url 'gestion:logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="nav-link">Se déconnecter</button>
+  </form>
+</section>
+{% endblock %}

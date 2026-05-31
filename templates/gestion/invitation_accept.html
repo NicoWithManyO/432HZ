@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Créer mon compte · Gestion 432 Hz{% endblock %}
+
+{% block content %}
+<section class="wrap py-[clamp(40px,8vw,80px)] max-w-md">
+  <h1 class="font-display font-black text-4xl mb-2">Bienvenue</h1>
+  <p class="text-muted mb-6">Choisis ton identifiant et ton mot de passe pour rejoindre la gestion.</p>
+  <form method="post" class="flex flex-col gap-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-red text-paper border-2 border-ink shadow-hard px-5 py-3 font-extrabold">Créer mon compte</button>
+  </form>
+</section>
+{% endblock %}

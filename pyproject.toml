@@ -8,7 +8,8 @@ testpaths = ["apps"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = [".venv", "staticfiles", "node_modules"]
+# Les migrations sont auto-générées par Django : hors périmètre du lint.
+extend-exclude = [".venv", "staticfiles", "node_modules", "**/migrations/*"]
 
 [tool.ruff.lint]
 # Erreurs/pyflakes, imports triés, upgrades, bugbear.

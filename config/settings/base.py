@@ -30,6 +30,9 @@ INSTALLED_APPS = [
     # Apps métier
     "apps.common",
     "apps.accounts",
+    "apps.media",
+    "apps.events",
+    "apps.news",
     "apps.pages",
 ]
 
@@ -76,6 +79,23 @@ DATABASES = {
         },
     }
 }
+
+
+# Hachage des mots de passe — Argon2 en tête (cf cahier §9, sécurité).
+
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
+
+
+# Authentification — point d'entrée de la gestion (cf apps.accounts.urls).
+
+LOGIN_URL = "gestion:login"
+LOGIN_REDIRECT_URL = "gestion:dashboard"
+LOGOUT_REDIRECT_URL = "gestion:login"
 
 
 # Validation des mots de passe
