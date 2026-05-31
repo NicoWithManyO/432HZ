@@ -17,6 +17,7 @@
 <body>
   <a class="skip-link" href="#main">Aller au contenu</a>
 
+  {% block ticker_bar %}
   {# Ticker — bandeau noir défilant (piste dupliquée ×2 pour la boucle). #}
   <div class="ticker bg-ink text-paper overflow-hidden whitespace-nowrap border-b-2 border-ink" aria-hidden="true">
     <div class="animate-ticker inline-block py-2 font-mono uppercase tracking-[.18em] text-[.74rem]">
@@ -27,7 +28,9 @@
       {% endblock %}
     </div>
   </div>
+  {% endblock ticker_bar %}
 
+  {% block header %}
   {# Header sticky — logo + nav desktop + burger mobile. #}
   <header class="sticky top-0 z-[70] bg-paper border-b-2 border-ink">
     <div class="wrap flex items-center justify-between gap-4 min-h-[var(--hdr)] py-3">
@@ -60,11 +63,13 @@
       <a class="mt-7 bg-red text-paper border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="/adherer/">Adhérer</a>
     </nav>
   </div>
+  {% endblock header %}
 
   <main id="main">
     {% block content %}{% endblock %}
   </main>
 
+  {% block footer %}
   {# Footer — logo + navigation + réseaux. #}
   <footer class="bg-paper pt-[clamp(40px,7vw,54px)] pb-[30px] border-t-2 border-ink">
     <div class="wrap">
@@ -98,6 +103,7 @@
       </div>
     </div>
   </footer>
+  {% endblock footer %}
 
   <script type="module" src="{% static 'js/main.js' %}"></script>
 </body>

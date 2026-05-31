@@ -2,11 +2,9 @@ from django.contrib.auth import login
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from django.views.generic import TemplateView
 
 from .forms import InvitationAcceptForm
 from .models import EDITOR, Invitation, Profile
-from .permissions import ValidatedRequiredMixin
 
 # Backend explicite : l'utilisateur fraîchement créé n'a pas d'attribut `backend`.
 _AUTH_BACKEND = "django.contrib.auth.backends.ModelBackend"
@@ -42,7 +40,3 @@ def accept_invitation(request, token):
         "gestion/invitation_accept.html",
         {"form": form, "invitation": invitation},
     )
-
-
-class DashboardView(ValidatedRequiredMixin, TemplateView):
-    template_name = "gestion/dashboard.html"

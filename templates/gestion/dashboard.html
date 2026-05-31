@@ -1,15 +1,13 @@
-{% extends "base.html" %}
+{% extends "gestion/base_gestion.html" %}
 
 {% block title %}Tableau de bord · Gestion 432 Hz{% endblock %}
 
-{% block content %}
-<section class="wrap py-[clamp(40px,8vw,80px)]">
-  <h1 class="font-display font-black text-4xl mb-2">Tableau de bord</h1>
-  <p class="text-muted mb-6">Connecté·e en tant que <strong>{{ user.username }}</strong> ({{ user.profile.get_role_display }}).</p>
-  {# Raccourcis events/actus et médiathèque : P2. #}
-  <form method="post" action="{% url 'gestion:logout' %}">
-    {% csrf_token %}
-    <button type="submit" class="nav-link">Se déconnecter</button>
-  </form>
-</section>
+{% block gestion %}
+<span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Gestion 432 Hz</span>
+<h1 class="font-display font-black text-[clamp(2.2rem,6vw,3.4rem)] leading-none mt-2 mb-2">Tableau de bord</h1>
+<p class="text-ink-soft mb-8">Connecté·e en tant que <strong>{{ user.username }}</strong> · {{ user.profile.get_role_display }}.</p>
+
+{# Raccourcis (Nouvel event / Nouvelle actu / Médiathèque) et listes récentes :
+   câblés au fil des sous-étapes P2.1–P2.3, dès que les routes existent. #}
+<p class="font-mono uppercase tracking-[.12em] text-[.72rem] text-muted">Les raccourcis events, actus et médiathèque arrivent.</p>
 {% endblock %}

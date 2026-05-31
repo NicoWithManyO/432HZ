@@ -1,14 +1,16 @@
-{% extends "base.html" %}
+{% extends "gestion/base_gestion.html" %}
 
 {% block title %}Connexion · Gestion 432 Hz{% endblock %}
 
-{% block content %}
-<section class="wrap py-[clamp(40px,8vw,80px)] max-w-md">
-  <h1 class="font-display font-black text-4xl mb-6">Connexion</h1>
-  <form method="post" class="flex flex-col gap-4">
+{% block gestion %}
+<div class="max-w-md mx-auto">
+  <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Accès gestion</span>
+  <h1 class="font-display font-black text-[clamp(2rem,5vw,2.8rem)] leading-none mt-2 mb-6">Connexion</h1>
+
+  <form method="post" class="gestion-form flex flex-col gap-4">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="bg-red text-paper border-2 border-ink shadow-hard px-5 py-3 font-extrabold">Se connecter</button>
+    <button type="submit" class="btn btn--red mt-2">Se connecter</button>
   </form>
-</section>
+</div>
 {% endblock %}

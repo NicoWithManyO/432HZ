@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{# Layout de l'admin convivial : même charte « affiche », topbar sombre dédiée.
+   Pas de ticker ni de nav publique. La nav gestion n'apparaît que pour un profil
+   validé (les pages login/invitation, anonymes, n'affichent que le logo). #}
+
+{% block ticker_bar %}{% endblock %}
+
+{% block header %}
+<header class="sticky top-0 z-[70] bg-ink text-paper border-b-2 border-ink">
+  <div class="wrap flex items-center justify-between gap-4 min-h-[var(--hdr)] py-3">
+    <a href="{% url 'gestion:dashboard' %}" class="flex items-center gap-3 min-w-0">
+      <img src="{% static 'brand/logo-432hz.png' %}" alt="432 Hz" class="h-[clamp(34px,6vw,42px)] w-auto">
+      <span class="font-mono text-[.6rem] tracking-[.18em] uppercase text-paper/70 border-l-2 border-red pl-[9px]">Gestion</span>
+    </a>
+
+    {% if user.is_authenticated and user.profile.is_validated %}
+    <nav class="flex items-center gap-[clamp(14px,2.4vw,28px)] text-[.9rem]" aria-label="Navigation gestion">
+      <a class="nav-link" href="{% url 'gestion:dashboard' %}">Tableau de bord</a>
+      {# Events · Actus · Médiathèque · Comptes : ajoutés au fil des sous-étapes P2. #}
+      {% block gestion_nav %}{% endblock %}
+      <form method="post" action="{% url 'gestion:logout' %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="nav-link">Déconnexion</button>
+      </form>
+    </nav>
+    {% endif %}
+  </div>
+</header>
+{% endblock %}
+
+{% block footer %}
+<footer class="bg-paper border-t-2 border-ink py-6">
+  <div class="wrap font-mono text-[.66rem] uppercase tracking-[.1em] text-muted">
+    Gestion 432 Hz · interface privée
+  </div>
+</footer>
+{% endblock %}
+
+{% block content %}
+<section class="wrap py-[clamp(28px,5vw,52px)]">
+  {% block gestion %}{% endblock %}
+</section>
+{% endblock %}

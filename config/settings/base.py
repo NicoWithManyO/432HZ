@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "apps.events",
     "apps.news",
     "apps.pages",
+    # Présentation de l'admin convivial (namespace url `gestion`)
+    "apps.gestion",
 ]
 
 MIDDLEWARE = [
@@ -91,7 +93,7 @@ PASSWORD_HASHERS = [
 ]
 
 
-# Authentification — point d'entrée de la gestion (cf apps.accounts.urls).
+# Authentification — point d'entrée de la gestion (cf apps.gestion.urls).
 
 LOGIN_URL = "gestion:login"
 LOGIN_REDIRECT_URL = "gestion:dashboard"

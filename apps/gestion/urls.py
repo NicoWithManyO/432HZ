@@ -1,5 +1,13 @@
+"""Routage de l'interface de gestion conviviale (`/gestion/`).
+
+Porte le namespace `gestion`. L'authentification (login/logout/invitation) reste
+servie par des vues d'`apps.accounts` (domaine comptes), simplement câblée ici.
+"""
+
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
+
+from apps.accounts.views import accept_invitation
 
 from . import views
 
@@ -9,5 +17,5 @@ urlpatterns = [
     path("", views.DashboardView.as_view(), name="dashboard"),
     path("connexion/", LoginView.as_view(template_name="gestion/login.html"), name="login"),
     path("deconnexion/", LogoutView.as_view(), name="logout"),
-    path("invitation/<str:token>/", views.accept_invitation, name="accept-invitation"),
+    path("invitation/<str:token>/", accept_invitation, name="accept-invitation"),
 ]

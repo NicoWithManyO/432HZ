@@ -161,6 +161,71 @@ html.js .rv.pending {
     transform: none;
     visibility: visible;
   }
+
+  /* --- Composants d'admin (interface /gestion/) ---
+     Charte « affiche » : radius 0, bordures nettes, ombres dures. */
+
+  /* Bouton : ombre dure qui s'agrandit au hover. .btn--red (CTA) / .btn--ghost. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 20px;
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    font-family: var(--grotesk);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.14s, box-shadow 0.14s;
+  }
+  .btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .btn--red {
+    background: var(--red);
+    color: var(--paper);
+  }
+
+  /* Formulaire d'admin : style appliqué aux champs rendus par Django (as_p / partial),
+     pour ne pas répéter les classes sur chaque widget. Labels mono, champs cadrés. */
+  .gestion-form label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .gestion-form input,
+  .gestion-form select,
+  .gestion-form textarea {
+    width: 100%;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    padding: 10px 12px;
+    font-family: var(--grotesk);
+    font-size: 1rem;
+  }
+  .gestion-form .helptext {
+    display: block;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .gestion-form .errorlist {
+    margin: 4px 0;
+    padding: 0;
+    list-style: none;
+    color: var(--red-deep);
+    font-size: 0.85rem;
+  }
 }
 
 /* Respect strict de prefers-reduced-motion : coupe animations, ticker, scroll doux,
