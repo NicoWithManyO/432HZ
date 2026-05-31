@@ -65,6 +65,16 @@ class PublishableModel(models.Model):
                 kwargs["update_fields"] = {*update_fields, "published_at"}
         super().save(*args, **kwargs)
 
+    def publish(self):
+        """Passe en publié (published_at posé une seule fois, cf save())."""
+        self.status = PUBLISHED
+        self.save(update_fields=["status"])
+
+    def unpublish(self):
+        """Repasse en brouillon (conserve published_at d'origine)."""
+        self.status = DRAFT
+        self.save(update_fields=["status"])
+
 
 class SluggedModel(models.Model):
     """Slug dérivé d'un champ source à la création, unique, stable ensuite.

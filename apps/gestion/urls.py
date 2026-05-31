@@ -23,4 +23,11 @@ urlpatterns = [
     path("medias/ajouter/", views.ImageUploadView.as_view(), name="media-upload"),
     path("medias/<uuid:pk>/modifier/", views.ImageUpdateView.as_view(), name="media-update"),
     path("medias/<uuid:pk>/supprimer/", views.ImageDeleteView.as_view(), name="media-delete"),
+    # Events
+    path("events/", views.EventListView.as_view(), name="event-list"),
+    path("events/ajouter/", views.EventCreateView.as_view(), name="event-create"),
+    path("events/<uuid:pk>/modifier/", views.EventUpdateView.as_view(), name="event-update"),
+    path("events/<uuid:pk>/supprimer/", views.EventDeleteView.as_view(), name="event-delete"),
+    path("events/<uuid:pk>/publier/", views.EventPublishView.as_view(), name="event-publish"),
+    path("events/<uuid:pk>/depublier/", views.EventUnpublishView.as_view(), name="event-unpublish"),
 ]

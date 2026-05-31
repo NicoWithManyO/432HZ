@@ -18,8 +18,9 @@
     {% if user.is_authenticated and user.profile.is_validated %}
     <nav class="flex items-center gap-[clamp(14px,2.4vw,28px)] text-[.9rem]" aria-label="Navigation gestion">
       <a class="nav-link" href="{% url 'gestion:dashboard' %}">Tableau de bord</a>
+      <a class="nav-link" href="{% url 'gestion:event-list' %}">Events</a>
       <a class="nav-link" href="{% url 'gestion:media-list' %}">Médiathèque</a>
-      {# Events · Actus · Comptes : ajoutés au fil des sous-étapes P2. #}
+      {# Actus · Comptes : ajoutés au fil des sous-étapes P2. #}
       {% block gestion_nav %}{% endblock %}
       <form method="post" action="{% url 'gestion:logout' %}" class="inline">
         {% csrf_token %}

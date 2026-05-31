@@ -64,3 +64,21 @@ def test_is_past_uses_end_then_start():
     upcoming = Event.objects.create(title="à venir", starts_at=now + timedelta(days=2))
     assert past.is_past
     assert not upcoming.is_past
+
+
+@pytest.mark.django_db
+def test_publish_sets_status_and_date_once():
+    event = Event.objects.create(title="x", starts_at=timezone.now())
+    event.publish()
+    event.refresh_from_db()
+    assert event.status == PUBLISHED
+    first_date = event.published_at
+    assert first_date is not None
+
+    # Dépublier puis republier conserve la date d'origine.
+    event.unpublish()
+    event.refresh_from_db()
+    assert event.status == DRAFT
+    event.publish()
+    event.refresh_from_db()
+    assert event.published_at == first_date

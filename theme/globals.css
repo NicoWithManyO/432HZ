@@ -226,6 +226,25 @@ html.js .rv.pending {
     color: var(--red-deep);
     font-size: 0.85rem;
   }
+
+  /* Pastille de statut (brouillon / publié) dans les listes de gestion. */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border: 2px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .badge--draft {
+    background: var(--paper-2);
+    color: var(--muted);
+  }
+  .badge--published {
+    background: var(--red);
+    color: var(--paper);
+  }
 }
 
 /* Respect strict de prefers-reduced-motion : coupe animations, ticker, scroll doux,
