@@ -21,6 +21,7 @@ urlpatterns = [
     # Médiathèque
     path("medias/", views.MediaListView.as_view(), name="media-list"),
     path("medias/ajouter/", views.ImageUploadView.as_view(), name="media-upload"),
+    path("medias/televerser/", views.ImageQuickUploadView.as_view(), name="media-quick-upload"),
     path("medias/<uuid:pk>/modifier/", views.ImageUpdateView.as_view(), name="media-update"),
     path("medias/<uuid:pk>/supprimer/", views.ImageDeleteView.as_view(), name="media-delete"),
     # Events

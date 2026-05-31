@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -9,6 +11,7 @@ from django.views.generic import (
     TemplateView,
     UpdateView,
 )
+from easy_thumbnails.files import get_thumbnailer
 
 from apps.accounts.models import Invitation, Profile
 from apps.accounts.permissions import OwnerRequiredMixin, ValidatedRequiredMixin
@@ -63,6 +66,49 @@ class ImageDeleteView(ValidatedRequiredMixin, DeleteView):
     success_url = reverse_lazy("gestion:media-list")
 
 
+class ImageQuickUploadView(ValidatedRequiredMixin, View):
+    """Upload AJAX d'une image depuis un formulaire event/actu : crée le média (donc il
+    rejoint la médiathèque) et renvoie son id + sa vignette, pour que le picker l'ajoute à
+    la galerie sans quitter la page. Même validation serveur que l'upload classique."""
+
+    def post(self, request):
+        form = ImageUploadForm(request.POST, request.FILES)
+        if not form.is_valid():
+            return JsonResponse({"errors": form.errors}, status=400)
+        image = form.save(commit=False)
+        image.uploaded_by = request.user
+        image.save()
+        return JsonResponse(
+            {
+                "id": str(image.pk),
+                "thumb": get_thumbnailer(image.file)["card"].url,
+                "label": image.title or image.alt or "Sans titre",
+                "caption": image.caption,
+            }
+        )
+
+
+# --- Galerie (events + actus) ---
+
+
+class GallerySaveMixin:
+    """Vues Create/Update d'objets à galerie : sauve l'objet puis synchronise les lignes
+    *through* via le formulaire, et expose le pool d'images de la médiathèque au picker."""
+
+    def form_valid(self, form):
+        # Objet + lignes *through* dans une même transaction : si la synchro de la galerie
+        # échoue, on ne laisse pas l'objet sauvé avec une galerie à moitié reconstruite.
+        with transaction.atomic():
+            response = super().form_valid(form)  # sauve self.object (pk disponible ensuite)
+            form.save_gallery(self.object)
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["available_images"] = Image.objects.all()
+        return context
+
+
 # --- Events ---
 
 
@@ -88,14 +134,14 @@ class EventListView(ValidatedRequiredMixin, ListView):
         return context
 
 
-class EventCreateView(ValidatedRequiredMixin, CreateView):
+class EventCreateView(GallerySaveMixin, ValidatedRequiredMixin, CreateView):
     model = Event
     form_class = EventForm
     template_name = "gestion/events/form.html"
     success_url = reverse_lazy("gestion:event-list")
 
 
-class EventUpdateView(ValidatedRequiredMixin, UpdateView):
+class EventUpdateView(GallerySaveMixin, ValidatedRequiredMixin, UpdateView):
     model = Event
     form_class = EventForm
     template_name = "gestion/events/form.html"
@@ -143,14 +189,14 @@ class NewsListView(ValidatedRequiredMixin, ListView):
         return context
 
 
-class NewsCreateView(ValidatedRequiredMixin, CreateView):
+class NewsCreateView(GallerySaveMixin, ValidatedRequiredMixin, CreateView):
     model = News
     form_class = NewsForm
     template_name = "gestion/news/form.html"
     success_url = reverse_lazy("gestion:news-list")
 
 
-class NewsUpdateView(ValidatedRequiredMixin, UpdateView):
+class NewsUpdateView(GallerySaveMixin, ValidatedRequiredMixin, UpdateView):
     model = News
     form_class = NewsForm
     template_name = "gestion/news/form.html"

@@ -1,0 +1,61 @@
+{% load thumbnail %}
+{% comment %}
+  Picker de galerie ordonnée. Le champ caché « gallery » (CSV d'UUID) et le champ caché
+  « cover » (UUID de la couverture) sont rendus par le as_p du formulaire ; ici on ne pose
+  que l'UI, reliée par gallery.js. La couverture se choisit en marquant (★) une image de la
+  galerie. On peut téléverser une image directement (endpoint AJAX) avec ses métadonnées :
+  elle rejoint la médiathèque et la galerie sans quitter la page.
+  Sans JS : zone non éditable (la galerie est un enrichissement).
+{% endcomment %}
+<div class="flex flex-col gap-3" data-gallery
+     data-upload-url="{% url 'gestion:media-quick-upload' %}">
+  <span class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted">Galerie (ordre d'affichage)</span>
+
+  {# Sélection ordonnée — remplie par le JS depuis la valeur du champ caché. #}
+  <div class="flex flex-col gap-2" data-gallery-selected></div>
+  <p class="text-[.8rem] text-muted" data-gallery-empty hidden>Aucune image dans la galerie.</p>
+  <p class="text-[.78rem] text-muted" data-gallery-cover-hint hidden>Clique sur ★ pour définir l'image de couverture.</p>
+
+  {# Téléversement direct avec métadonnées (amélioration progressive : sans JS, médiathèque). #}
+  <details class="border-2 border-ink bg-paper-2" data-gallery-upload-panel>
+    <summary class="cursor-pointer select-none p-2 font-mono uppercase tracking-[.08em] text-[.72rem]">
+      Téléverser une image
+    </summary>
+    <div class="flex flex-col gap-2 p-2 border-t-2 border-ink">
+      <input type="file" accept="image/*" aria-label="Fichier image" data-gallery-upload-file>
+      <input type="text" maxlength="200" placeholder="Texte alternatif (accessibilité)"
+             aria-label="Texte alternatif" data-gallery-upload-alt>
+      <input type="text" maxlength="200" placeholder="Titre (médiathèque)"
+             aria-label="Titre" data-gallery-upload-title>
+      <input type="text" maxlength="255" placeholder="Légende (affichée avec l'image)"
+             aria-label="Légende" data-gallery-upload-caption>
+      <button type="button" class="btn btn--red self-start" data-gallery-upload-submit>Téléverser &amp; ajouter</button>
+      <p class="text-red-deep text-[.8rem]" data-gallery-upload-error hidden></p>
+    </div>
+  </details>
+
+  {# Pool : toute la médiathèque, cliquable pour ajouter/retirer (le JS y injecte les uploads). #}
+  <details class="border-2 border-ink bg-paper-2" data-gallery-picker>
+    <summary class="cursor-pointer select-none p-2 font-mono uppercase tracking-[.08em] text-[.72rem]">
+      Ajouter depuis la médiathèque
+    </summary>
+    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 p-2" data-gallery-pool>
+      {% for image in available_images %}
+      {% if image.file %}
+      {% thumbnail image.file "card" as thumb %}
+      <button type="button"
+              class="block border-2 border-ink overflow-hidden text-left"
+              data-image-id="{{ image.pk }}"
+              data-thumb="{{ thumb.url }}"
+              data-label="{{ image.title|default:image.alt|default:'Sans titre' }}"
+              data-caption="{{ image.caption }}">
+        <img src="{{ thumb.url }}" alt="{{ image.alt }}" loading="lazy"
+             class="w-full aspect-[4/3] object-cover">
+      </button>
+      {% endif %}
+      {% empty %}
+      <p class="col-span-full text-[.8rem] text-muted">Médiathèque vide pour l'instant.</p>
+      {% endfor %}
+    </div>
+  </details>
+</div>

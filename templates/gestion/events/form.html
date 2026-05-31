@@ -13,6 +13,7 @@
   <form method="post" class="gestion-form flex flex-col gap-4">
     {% csrf_token %}
     {{ form.as_p }}
+    {% include "gestion/_gallery_field.html" %}
     <div class="flex items-center gap-3 mt-2">
       <button type="submit" class="btn btn--red">Enregistrer (brouillon)</button>
       <a href="{% url 'gestion:event-list' %}" class="nav-link">Annuler</a>
@@ -26,4 +27,5 @@
 
 {% block scripts %}
 <script type="module" src="{% static 'js/gestion-editor.js' %}"></script>
+<script type="module" src="{% static 'js/gallery.js' %}"></script>
 {% endblock %}
