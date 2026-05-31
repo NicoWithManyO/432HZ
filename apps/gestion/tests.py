@@ -9,6 +9,7 @@ from apps.accounts.models import Profile
 from apps.common.models import PUBLISHED
 from apps.events.models import Event
 from apps.gestion.sanitize import clean_html
+from apps.news.models import News
 
 
 def test_clean_html_keeps_allowed_tags():
@@ -114,3 +115,66 @@ def test_event_list_filters(validated_client):
     assert titles("past") == {"passé"}
     assert titles("drafts") == {"brouillon"}
     assert titles("all") == {"à venir", "passé", "brouillon"}
+
+
+# --- Vues actus ---
+
+
+@pytest.mark.django_db
+def test_news_list_requires_login(client):
+    response = client.get(reverse("gestion:news-list"))
+    assert response.status_code == 302  # anonyme → login
+
+
+@pytest.mark.django_db
+def test_news_list_forbidden_for_unvalidated(client):
+    user = User.objects.create_user("pending-news", password="pw-test-1234")
+    Profile.objects.create(user=user, is_validated=False)
+    client.force_login(user)
+    assert client.get(reverse("gestion:news-list")).status_code == 403
+
+
+@pytest.mark.django_db
+def test_news_create_sanitizes_description(validated_client):
+    response = validated_client.post(
+        reverse("gestion:news-create"),
+        {
+            "title": "Appel à bénévoles",
+            "slug": "",
+            "category": "Appel",
+            "description": "<p>Rejoignez-nous</p><script>alert(1)</script>",
+            "cover": "",
+        },
+    )
+    assert response.status_code == 302
+    news = News.objects.get(title="Appel à bénévoles")
+    assert "<script>" not in news.description
+    assert "<p>Rejoignez-nous</p>" in news.description
+    assert news.status == "draft"  # créée en brouillon
+    assert news.slug == "appel-a-benevoles"  # slug auto
+
+
+@pytest.mark.django_db
+def test_news_publish_and_unpublish_views(validated_client):
+    news = News.objects.create(title="x")
+    validated_client.post(reverse("gestion:news-publish", args=[news.pk]))
+    news.refresh_from_db()
+    assert news.status == PUBLISHED and news.published_at is not None
+
+    validated_client.post(reverse("gestion:news-unpublish", args=[news.pk]))
+    news.refresh_from_db()
+    assert news.status == "draft"
+
+
+@pytest.mark.django_db
+def test_news_list_filters(validated_client):
+    News.objects.create(title="publiée", status=PUBLISHED)
+    News.objects.create(title="brouillon")
+
+    def titles(filter_value):
+        response = validated_client.get(reverse("gestion:news-list"), {"filter": filter_value})
+        return {n.title for n in response.context["news_list"]}
+
+    assert titles("published") == {"publiée"}
+    assert titles("drafts") == {"brouillon"}
+    assert titles("all") == {"publiée", "brouillon"}

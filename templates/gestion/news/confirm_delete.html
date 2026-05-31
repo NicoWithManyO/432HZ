@@ -1,0 +1,17 @@
+{% extends "gestion/base_gestion.html" %}
+
+{% block title %}Supprimer une actu · Gestion 432 Hz{% endblock %}
+
+{% block gestion %}
+<div class="max-w-xl mx-auto">
+  <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Actualités</span>
+  <h1 class="font-display font-black text-[clamp(1.8rem,5vw,2.6rem)] leading-none mt-2 mb-4">Supprimer cette actu ?</h1>
+  <p class="text-ink-soft mb-6">« {{ object.title }} » sera supprimée définitivement.</p>
+
+  <form method="post" class="flex items-center gap-3">
+    {% csrf_token %}
+    <button type="submit" class="btn btn--red">Supprimer définitivement</button>
+    <a href="{% url 'gestion:news-list' %}" class="nav-link">Annuler</a>
+  </form>
+</div>
+{% endblock %}

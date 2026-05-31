@@ -11,11 +11,12 @@ from django.views.generic import (
 )
 
 from apps.accounts.permissions import ValidatedRequiredMixin
-from apps.common.models import DRAFT
+from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
-from apps.gestion.forms import EventForm
+from apps.gestion.forms import EventForm, NewsForm
 from apps.media.forms import ImageMetaForm, ImageUploadForm
 from apps.media.models import Image
+from apps.news.models import News
 
 
 class DashboardView(ValidatedRequiredMixin, TemplateView):
@@ -116,3 +117,58 @@ class EventUnpublishView(ValidatedRequiredMixin, View):
     def post(self, request, pk):
         get_object_or_404(Event, pk=pk).unpublish()
         return redirect("gestion:event-list")
+
+
+# --- Actus ---
+
+
+class NewsListView(ValidatedRequiredMixin, ListView):
+    model = News
+    template_name = "gestion/news/list.html"
+    context_object_name = "news_list"
+    paginate_by = 30
+
+    def get_queryset(self):
+        # Filtres de confort : publiées / brouillons (tout par défaut).
+        news = News.objects.all()
+        return {
+            "published": news.filter(status=PUBLISHED),
+            "drafts": news.filter(status=DRAFT),
+        }.get(self.request.GET.get("filter"), news)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["current_filter"] = self.request.GET.get("filter", "all")
+        return context
+
+
+class NewsCreateView(ValidatedRequiredMixin, CreateView):
+    model = News
+    form_class = NewsForm
+    template_name = "gestion/news/form.html"
+    success_url = reverse_lazy("gestion:news-list")
+
+
+class NewsUpdateView(ValidatedRequiredMixin, UpdateView):
+    model = News
+    form_class = NewsForm
+    template_name = "gestion/news/form.html"
+    success_url = reverse_lazy("gestion:news-list")
+
+
+class NewsDeleteView(ValidatedRequiredMixin, DeleteView):
+    model = News
+    template_name = "gestion/news/confirm_delete.html"
+    success_url = reverse_lazy("gestion:news-list")
+
+
+class NewsPublishView(ValidatedRequiredMixin, View):
+    def post(self, request, pk):
+        get_object_or_404(News, pk=pk).publish()
+        return redirect("gestion:news-list")
+
+
+class NewsUnpublishView(ValidatedRequiredMixin, View):
+    def post(self, request, pk):
+        get_object_or_404(News, pk=pk).unpublish()
+        return redirect("gestion:news-list")

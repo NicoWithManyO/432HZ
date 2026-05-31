@@ -1,0 +1,61 @@
+{% extends "gestion/base_gestion.html" %}
+
+{% block title %}Actus · Gestion 432 Hz{% endblock %}
+
+{% block gestion %}
+<div class="flex items-end justify-between flex-wrap gap-4 mb-6">
+  <div>
+    <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Actualités</span>
+    <h1 class="font-display font-black text-[clamp(2rem,5vw,3rem)] leading-none mt-2">Actus</h1>
+  </div>
+  <a href="{% url 'gestion:news-create' %}" class="btn btn--red">Nouvelle actu</a>
+</div>
+
+{% with f=current_filter %}
+<nav class="flex flex-wrap gap-2 mb-6 font-mono text-[.7rem] uppercase tracking-[.1em]" aria-label="Filtres">
+  <a href="?filter=all" class="px-3 py-1 border-2 border-ink {% if f == 'all' %}bg-ink text-paper{% endif %}">Toutes</a>
+  <a href="?filter=published" class="px-3 py-1 border-2 border-ink {% if f == 'published' %}bg-ink text-paper{% endif %}">Publiées</a>
+  <a href="?filter=drafts" class="px-3 py-1 border-2 border-ink {% if f == 'drafts' %}bg-ink text-paper{% endif %}">Brouillons</a>
+</nav>
+{% endwith %}
+
+{% if news_list %}
+<div class="border-2 border-ink divide-y-2 divide-ink">
+  {% for news in news_list %}
+  <div class="flex items-center gap-4 p-3 flex-wrap">
+    <div class="min-w-0 flex-1">
+      <a href="{% url 'gestion:news-update' news.pk %}" class="font-display font-bold text-lg leading-tight hover:text-red">{{ news.title }}</a>
+      <div class="font-mono text-[.66rem] uppercase tracking-[.08em] text-muted mt-1">
+        {% if news.category %}{{ news.category }} · {% endif %}{% if news.published_at %}{{ news.published_at|date:"d/m/Y" }}{% else %}—{% endif %}
+      </div>
+    </div>
+    {% if news.status == 'published' %}
+    <span class="badge badge--published">Publiée</span>
+    {% else %}
+    <span class="badge badge--draft">Brouillon</span>
+    {% endif %}
+    <div class="flex items-center gap-2">
+      {% if news.status == 'published' %}
+      <form method="post" action="{% url 'gestion:news-unpublish' news.pk %}">{% csrf_token %}<button class="nav-link text-[.8rem]">Dépublier</button></form>
+      {% else %}
+      <form method="post" action="{% url 'gestion:news-publish' news.pk %}">{% csrf_token %}<button class="nav-link text-[.8rem]">Publier</button></form>
+      {% endif %}
+      <a href="{% url 'gestion:news-update' news.pk %}" class="nav-link text-[.8rem]">Modifier</a>
+      <a href="{% url 'gestion:news-delete' news.pk %}" class="nav-link text-[.8rem] text-red-deep">Suppr.</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="flex items-center gap-4 mt-6 font-mono text-[.72rem] uppercase tracking-[.1em]" aria-label="Pagination">
+  {% if page_obj.has_previous %}<a class="nav-link" href="?filter={{ current_filter }}&page={{ page_obj.previous_page_number }}">← Précédent</a>{% endif %}
+  <span class="text-muted">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="nav-link" href="?filter={{ current_filter }}&page={{ page_obj.next_page_number }}">Suivant →</a>{% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<p class="text-ink-soft">Aucune actu{% if current_filter != 'all' %} pour ce filtre{% endif %}. <a href="{% url 'gestion:news-create' %}" class="underline decoration-red decoration-2">Créer une actu.</a></p>
+{% endif %}
+{% endblock %}

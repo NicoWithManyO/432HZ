@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.events.models import Event
+from apps.news.models import News
 
 from .sanitize import clean_html
 
@@ -37,6 +38,27 @@ class EventForm(forms.ModelForm):
         self.fields["slug"].required = False
         self.fields["starts_at"].input_formats = [_DATETIME_LOCAL]
         self.fields["ends_at"].input_formats = [_DATETIME_LOCAL]
+
+    def clean_description(self):
+        # Barrière serveur : on ne stocke que du HTML léger sanitizé.
+        return clean_html(self.cleaned_data["description"])
+
+
+class NewsForm(forms.ModelForm):
+    """Saisie d'une actu. Comme l'event : statut piloté hors formulaire,
+    galerie ordonnée traitée à part."""
+
+    class Meta:
+        model = News
+        fields = ["title", "slug", "category", "description", "cover"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 8, "data-richtext": True}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Slug optionnel : dérivé du titre à la création s'il est laissé vide.
+        self.fields["slug"].required = False
 
     def clean_description(self):
         # Barrière serveur : on ne stocke que du HTML léger sanitizé.

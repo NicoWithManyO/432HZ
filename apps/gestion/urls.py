@@ -30,4 +30,11 @@ urlpatterns = [
     path("events/<uuid:pk>/supprimer/", views.EventDeleteView.as_view(), name="event-delete"),
     path("events/<uuid:pk>/publier/", views.EventPublishView.as_view(), name="event-publish"),
     path("events/<uuid:pk>/depublier/", views.EventUnpublishView.as_view(), name="event-unpublish"),
+    # Actus
+    path("actus/", views.NewsListView.as_view(), name="news-list"),
+    path("actus/ajouter/", views.NewsCreateView.as_view(), name="news-create"),
+    path("actus/<uuid:pk>/modifier/", views.NewsUpdateView.as_view(), name="news-update"),
+    path("actus/<uuid:pk>/supprimer/", views.NewsDeleteView.as_view(), name="news-delete"),
+    path("actus/<uuid:pk>/publier/", views.NewsPublishView.as_view(), name="news-publish"),
+    path("actus/<uuid:pk>/depublier/", views.NewsUnpublishView.as_view(), name="news-unpublish"),
 ]
