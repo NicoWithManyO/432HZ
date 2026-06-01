@@ -204,6 +204,11 @@ editor). Création de compte uniquement via **invitation** (§9).
 1. **Connexion** : formulaire login. Rate-limité.
 2. **Tableau de bord** : raccourcis « Nouvel event », « Nouvelle actu », listes récentes avec pastille
    de statut (brouillon/publié).
+   - **Édition des contenus de pages** organisée en **onglets, un par page** (Accueil d'abord ; **L'asso
+     & Contact plus tard**). Dans chaque onglet, les blocs de formulaire sont en **accordéon** : repliés
+     par défaut, on les déroule pour éditer (ex. accueil = blocs « Hero » + « Bandeau défilant »).
+   - NB : rendre **L'asso & Contact** éditables fera évoluer ces pages aujourd'hui **fixes** (§5) vers du
+     contenu stocké en base — décision à acter au moment de l'implémenter (après P3).
 3. **Events — liste** : tableau (titre, date, statut, modifié le), filtres à venir/passés/brouillons,
    actions éditer/supprimer.
 4. **Event — formulaire** (création/édition) :
