@@ -220,6 +220,76 @@ html.js .rv.pending {
     cursor: not-allowed;
   }
 
+  /* Onglets du tableau de bord (ARIA tablist) : un onglet par page éditable.
+     L'onglet actif est souligné en rouge ; le JS bascule aria-selected. */
+  .gestion-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(12px, 2.6vw, 30px);
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: clamp(24px, 4vw, 40px);
+  }
+  .gestion-tab {
+    margin-bottom: -2px; /* le soulignement actif recouvre la bordure du conteneur */
+    padding: 10px 2px;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .gestion-tab:hover {
+    color: var(--ink);
+  }
+  .gestion-tab[aria-selected="true"] {
+    color: var(--ink);
+    font-weight: 700;
+    border-bottom-color: var(--red);
+  }
+
+  /* Accordéon d'édition (<details> natif) : replié par défaut, marqueur +/− custom. */
+  .gestion-accordion {
+    border: 2px solid var(--ink);
+  }
+  .gestion-accordion + .gestion-accordion {
+    margin-top: 16px;
+  }
+  .gestion-accordion > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: clamp(14px, 2.4vw, 22px);
+    cursor: pointer;
+    list-style: none; /* retire le marqueur natif (Firefox) */
+  }
+  .gestion-accordion > summary::-webkit-details-marker {
+    display: none; /* retire le marqueur natif (WebKit) */
+  }
+  /* Indicateur piloté par l'état ouvert/fermé du <details>. */
+  .gestion-accordion > summary::after {
+    content: "+";
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--red);
+  }
+  .gestion-accordion[open] > summary::after {
+    content: "−";
+  }
+  .gestion-accordion > summary:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+  }
+  .gestion-accordion-body {
+    padding: 0 clamp(14px, 2.4vw, 22px) clamp(18px, 2.4vw, 24px);
+  }
+
   /* Formulaire d'admin : style appliqué aux champs rendus par Django (as_p / partial),
      pour ne pas répéter les classes sur chaque widget. Labels mono, champs cadrés. */
   .gestion-form label {

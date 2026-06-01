@@ -1,4 +1,5 @@
 {% extends "gestion/base_gestion.html" %}
+{% load static %}
 
 {% block title %}Tableau de bord · Gestion 432 Hz{% endblock %}
 
@@ -7,55 +8,100 @@
 <h1 class="font-display font-black text-[clamp(2.2rem,6vw,3.4rem)] leading-none mt-2 mb-2">Tableau de bord</h1>
 <p class="text-ink-soft mb-10">Connecté·e en tant que <strong>{{ user.username }}</strong> · {{ user.profile.get_role_display }}.</p>
 
-{# --- Hero de l'accueil --- #}
-<section class="mb-12 border-2 border-ink p-[clamp(18px,3vw,28px)]">
-  <h2 class="font-display font-black text-[clamp(1.4rem,4vw,2rem)] leading-none mb-1">Hero de l'accueil</h2>
-  <p class="text-ink-soft text-[.92rem] mb-5">Le bloc d'introduction en haut de la page d'accueil.</p>
-  <form method="post" action="{% url 'gestion:home-content-update' %}" class="gestion-form flex flex-col gap-4">
-    {% csrf_token %}
-    {{ home_form.as_p }}
-    <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
-  </form>
-</section>
+{# Un onglet par page éditable : Accueil est actif, les autres sont des placeholders. #}
+<div class="gestion-tabs" role="tablist" aria-label="Pages éditables" data-tabs>
+  <button type="button" class="gestion-tab" role="tab" id="tab-accueil" aria-controls="panel-accueil" aria-selected="true">Accueil</button>
+  <button type="button" class="gestion-tab" role="tab" id="tab-asso" aria-controls="panel-asso" aria-selected="false">L'asso</button>
+  <button type="button" class="gestion-tab" role="tab" id="tab-contact" aria-controls="panel-contact" aria-selected="false">Contact</button>
+  <button type="button" class="gestion-tab" role="tab" id="tab-mentions" aria-controls="panel-mentions" aria-selected="false">Mentions légales</button>
+</div>
 
-{# --- Bandeau défilant --- #}
-<section class="border-2 border-ink p-[clamp(18px,3vw,28px)]">
-  <h2 class="font-display font-black text-[clamp(1.4rem,4vw,2rem)] leading-none mb-1">Bandeau défilant</h2>
-  <p class="text-ink-soft text-[.92rem] mb-5">Les phrases qui défilent en haut du site. « Mise en avant » ⇒ phrase en rouge.</p>
+{# --- Onglet Accueil : les deux blocs existants en accordéon --- #}
+<div id="panel-accueil" role="tabpanel" aria-labelledby="tab-accueil" tabindex="0">
 
-  <ul class="flex flex-col gap-2 mb-6">
-    {% for item in ticker_items %}
-    <li class="flex items-center gap-2 border-2 border-line p-2">
-      <span class="flex-1 font-mono uppercase tracking-[.1em] text-[.8rem] {% if item.highlighted %}text-red{% endif %}">{{ item.text }}</span>
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Hero de l'accueil</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Le bloc d'introduction en haut de la page d'accueil.</p>
+      <form method="post" action="{% url 'gestion:home-content-update' %}" class="gestion-form flex flex-col gap-4">
+        {% csrf_token %}
+        {{ home_form.as_p }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+      </form>
+    </div>
+  </details>
 
-      <form method="post" action="{% url 'gestion:ticker-move' item.pk %}?dir=up" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-icon" aria-label="Monter"{% if forloop.first %} disabled{% endif %}>▲</button>
-      </form>
-      <form method="post" action="{% url 'gestion:ticker-move' item.pk %}?dir=down" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-icon" aria-label="Descendre"{% if forloop.last %} disabled{% endif %}>▼</button>
-      </form>
-      <form method="post" action="{% url 'gestion:ticker-toggle-highlight' item.pk %}" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-icon {% if item.highlighted %}bg-red text-paper border-red{% endif %}"
-                aria-label="Mise en avant" aria-pressed="{{ item.highlighted|yesno:'true,false' }}">★</button>
-      </form>
-      <form method="post" action="{% url 'gestion:ticker-delete' item.pk %}" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-icon text-red-deep" aria-label="Supprimer">✕</button>
-      </form>
-    </li>
-    {% empty %}
-    <li class="text-ink-soft text-[.9rem]">Aucune phrase — le bandeau est masqué sur le site.</li>
-    {% endfor %}
-  </ul>
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Bandeau défilant</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les phrases qui défilent en haut du site. « Mise en avant » ⇒ phrase en rouge.</p>
 
-  <form method="post" action="{% url 'gestion:ticker-create' %}" class="gestion-form flex flex-wrap items-end gap-3">
-    {% csrf_token %}
-    <div class="flex-1 min-w-[200px]">{{ ticker_form.text.label_tag }}{{ ticker_form.text }}</div>
-    <label class="flex items-center gap-2 pb-2 text-[.9rem]">{{ ticker_form.highlighted }} Mise en avant</label>
-    <button type="submit" class="btn btn--red">Ajouter</button>
-  </form>
-</section>
+      <ul class="flex flex-col gap-2 mb-6">
+        {% for item in ticker_items %}
+        <li class="flex items-center gap-2 border-2 border-line p-2">
+          <span class="flex-1 font-mono uppercase tracking-[.1em] text-[.8rem] {% if item.highlighted %}text-red{% endif %}">{{ item.text }}</span>
+
+          <form method="post" action="{% url 'gestion:ticker-move' item.pk %}?dir=up" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-icon" aria-label="Monter"{% if forloop.first %} disabled{% endif %}>▲</button>
+          </form>
+          <form method="post" action="{% url 'gestion:ticker-move' item.pk %}?dir=down" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-icon" aria-label="Descendre"{% if forloop.last %} disabled{% endif %}>▼</button>
+          </form>
+          <form method="post" action="{% url 'gestion:ticker-toggle-highlight' item.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-icon {% if item.highlighted %}bg-red text-paper border-red{% endif %}"
+                    aria-label="Mise en avant" aria-pressed="{{ item.highlighted|yesno:'true,false' }}">★</button>
+          </form>
+          <form method="post" action="{% url 'gestion:ticker-delete' item.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-icon text-red-deep" aria-label="Supprimer">✕</button>
+          </form>
+        </li>
+        {% empty %}
+        <li class="text-ink-soft text-[.9rem]">Aucune phrase — le bandeau est masqué sur le site.</li>
+        {% endfor %}
+      </ul>
+
+      <form method="post" action="{% url 'gestion:ticker-create' %}" class="gestion-form flex flex-wrap items-end gap-3">
+        {% csrf_token %}
+        <div class="flex-1 min-w-[200px]">{{ ticker_form.text.label_tag }}{{ ticker_form.text }}</div>
+        <label class="flex items-center gap-2 pb-2 text-[.9rem]">{{ ticker_form.highlighted }} Mise en avant</label>
+        <button type="submit" class="btn btn--red">Ajouter</button>
+      </form>
+    </div>
+  </details>
+
+</div>
+
+{# --- Onglets à venir : édition du contenu de ces pages prévue ultérieurement --- #}
+<div id="panel-asso" role="tabpanel" aria-labelledby="tab-asso" tabindex="0">
+  <div class="border-2 border-dashed border-line p-[clamp(20px,4vw,40px)] text-center">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted mb-2">À venir</p>
+    <p class="text-ink-soft">L'édition du contenu de la page « L'asso » sera disponible prochainement.</p>
+  </div>
+</div>
+
+<div id="panel-contact" role="tabpanel" aria-labelledby="tab-contact" tabindex="0">
+  <div class="border-2 border-dashed border-line p-[clamp(20px,4vw,40px)] text-center">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted mb-2">À venir</p>
+    <p class="text-ink-soft">L'édition du contenu de la page « Contact » sera disponible prochainement.</p>
+  </div>
+</div>
+
+<div id="panel-mentions" role="tabpanel" aria-labelledby="tab-mentions" tabindex="0">
+  <div class="border-2 border-dashed border-line p-[clamp(20px,4vw,40px)] text-center">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted mb-2">À venir</p>
+    <p class="text-ink-soft">L'édition du contenu de la page « Mentions légales » sera disponible prochainement.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{% static 'js/gestion-tabs.js' %}"></script>
 {% endblock %}

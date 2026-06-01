@@ -459,9 +459,12 @@ def test_ticker_create_forbidden_for_unvalidated(client):
 def test_ticker_create_appends_at_end(validated_client):
     TickerItem.objects.all().delete()
     TickerItem.objects.create(text="Premier", order=0)
-    validated_client.post(reverse("gestion:ticker-create"), {"text": "Nouveau"})
+    response = validated_client.post(
+        reverse("gestion:ticker-create"), {"text": "Nouveau"}, follow=True
+    )
     created = TickerItem.objects.get(text="Nouveau")
     assert created.order == 1
+    assert "Phrase ajoutée" in response.content.decode()  # retour de succès (PRG)
 
 
 @pytest.mark.django_db
@@ -505,14 +508,28 @@ def test_ticker_move_swaps_order_with_neighbor(validated_client):
 @pytest.mark.django_db
 def test_home_content_update(validated_client):
     home = HomeContent.load()
-    validated_client.post(
+    response = validated_client.post(
         reverse("gestion:home-content-update"),
         {
             "subtitle": "Nouveau sous-titre",
             "punchline": "Une [r]punchline[/r].",
             "intro": "Intro modifiée.",
         },
+        follow=True,
     )
     home.refresh_from_db()
     assert home.subtitle == "Nouveau sous-titre"
     assert home.punchline == "Une [r]punchline[/r]."
+    # Fragment sans apostrophe (Django échappe ' en &#x27;) et propre au message de succès.
+    assert "accueil enregistré" in response.content.decode()  # retour de succès (PRG)
+
+
+@pytest.mark.django_db
+def test_dashboard_renders_tabs_and_accordions(validated_client):
+    # Onglets : un par page éditable, chacun relié à son panneau (aria-controls).
+    html = validated_client.get(reverse("gestion:dashboard")).content.decode()
+    for slug in ("accueil", "asso", "contact", "mentions"):
+        assert f'aria-controls="panel-{slug}"' in html
+        assert f'id="panel-{slug}"' in html
+    # Blocs existants de l'accueil passés en accordéon repliable.
+    assert html.count('class="gestion-accordion"') == 2

@@ -53,6 +53,9 @@ class HomeContentUpdateView(ValidatedRequiredMixin, View):
         form = HomeContentForm(request.POST, instance=HomeContent.load())
         if form.is_valid():
             form.save()
+            # L'accordéon se referme au redirect : on confirme via un message (sinon
+            # l'éditeur n'a aucun retour visible de son enregistrement).
+            messages.success(request, "Hero de l'accueil enregistré.")
         else:
             # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
             messages.error(request, "Hero non enregistré :\n" + form.errors.as_text())
@@ -68,6 +71,7 @@ class TickerItemCreateView(ValidatedRequiredMixin, View):
             last = TickerItem.objects.aggregate(Max("order"))["order__max"]
             item.order = last + 1 if last is not None else 0
             item.save()
+            messages.success(request, "Phrase ajoutée au bandeau.")
         else:
             messages.error(request, "Phrase non ajoutée :\n" + form.errors.as_text())
         return redirect("gestion:dashboard")
