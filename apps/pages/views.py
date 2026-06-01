@@ -7,13 +7,27 @@ from apps.pages.models import HomeContent
 
 
 class HomeView(TemplateView):
-    """Accueil — gabarit de fondation (P0). Le hero est piloté par HomeContent."""
+    """Accueil enrichi (P3.3) : hero piloté par HomeContent + à l'affiche, actus."""
 
     template_name = "public/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["home"] = HomeContent.load()
+
+        # À venir, du plus proche au plus lointain (cover préchargée → pas de N+1).
+        upcoming = (
+            Event.objects.published().upcoming().select_related("cover").order_by("starts_at")
+        )
+        # Vedette = l'event coché « à la une » le plus proche, sinon le prochain event.
+        featured = upcoming.filter(is_featured=True).first() or upcoming.first()
+        context["featured_event"] = featured
+        # Grille = les events suivants, hors vedette.
+        context["upcoming_events"] = (
+            list(upcoming.exclude(pk=featured.pk)[:3]) if featured else []
+        )
+
+        context["recent_news"] = list(News.objects.published()[:4])
         return context
 
 

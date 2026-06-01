@@ -1,6 +1,6 @@
-{# Pagination « affiche » réutilisable (public + gestion). `{% querystring %}` (Django 5.1+)
+{% comment %}Pagination « affiche » réutilisable (public + gestion). querystring (Django 5.1+)
    préserve les filtres courants de l'URL (when / filter) en ne changeant que `page`.
-   Param optionnel `margin` (classe de marge haute, défaut mt-10). #}
+   Param optionnel `margin` (classe de marge haute, défaut mt-10).{% endcomment %}
 {% if is_paginated %}
 <nav class="flex items-center gap-4 {{ margin|default:'mt-10' }} font-mono text-[.72rem] uppercase tracking-[.1em]" aria-label="Pagination">
   {% if page_obj.has_previous %}<a class="nav-link" href="{% querystring page=page_obj.previous_page_number %}">← Précédent</a>{% endif %}

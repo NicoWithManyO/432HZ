@@ -1,0 +1,9 @@
+{% comment %}Entête de section accueil : kicker mono rouge + titre serif + lien « voir tout ».
+   Params : kicker, title, more_url, more_label.{% endcomment %}
+<div class="flex items-end justify-between gap-4 flex-wrap mb-[clamp(24px,4vw,34px)] rv">
+  <div>
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ kicker }}</p>
+    <h2 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">{{ title }}</h2>
+  </div>
+  <a href="{{ more_url }}" class="font-mono text-[.74rem] uppercase tracking-[.12em] border-b-2 border-red pb-[3px] hover:text-red transition-colors">{{ more_label }}</a>
+</div>

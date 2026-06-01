@@ -2,21 +2,125 @@
 {% load pages %}
 
 {% comment %}
-  Accueil — gabarit de fondation (P0). Le hero (sous-titre, punchline, intro) est piloté
-  depuis la gestion (HomeContent). Le reste (stats, à l'affiche, agenda, …) viendra en P3.
+  Accueil enrichi (P3.3) à la maquette. Le hero (sous-titre, punchline, intro) est piloté
+  depuis la gestion (HomeContent) ; à l'affiche / actus / archives sont branchés sur les
+  events et actus publiés (cf HomeView). Stats et résumé asso = en dur (TODO), éditables
+  plus tard (cf cahier §13, dashboard onglets).
 {% endcomment %}
 
 {% block content %}
+{% url 'agenda' as agenda_url %}
+{% url 'actus' as actus_url %}
+
 <section class="border-b-2 border-ink py-[clamp(50px,9vw,74px)]">
   <div class="wrap">
     <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red-deep font-bold rv">{{ home.subtitle }}</p>
     <h1 class="font-display font-black text-[clamp(2.6rem,8vw,6.1rem)] leading-[.96] tracking-[-.02em] mt-[18px] max-w-[13ch] rv">{{ home.punchline|punchline }}</h1>
     <p class="max-w-[46ch] mt-[22px] text-[clamp(1rem,2vw,1.12rem)] text-ink-soft rv">{{ home.intro|linebreaksbr }}</p>
 
+    <div class="flex flex-wrap gap-[14px] mt-[30px] rv">
+      <a href="{% url 'adherer' %}" class="btn btn--red">Rejoindre l'asso</a>
+      <a href="{{ agenda_url }}" class="btn btn--ghost">Voir l'agenda →</a>
+    </div>
+
     {# Bandeau signature Waveform (cf DESIGN.md §7). #}
     <div class="relative mt-[clamp(34px,6vw,46px)] border-[3px] border-ink bg-paper rv">
       <div class="waveform h-[clamp(80px,16vw,120px)]" data-baseline="true" data-animated="true"></div>
     </div>
+
+    {# Chiffres-clés. TODO: tenir à jour (éditables plus tard via la gestion). #}
+    <div class="grid grid-cols-2 min-[600px]:grid-cols-4 gap-[2px] bg-ink border-2 border-ink mt-[clamp(22px,4vw,30px)] rv">
+      <div class="bg-paper text-center px-3 py-[clamp(14px,3vw,18px)]">
+        <div class="font-display font-black text-[clamp(1.8rem,5vw,2.7rem)] leading-none text-red">81</div>
+        <div class="font-mono text-[.62rem] uppercase tracking-[.12em] text-muted mt-1.5">Adhérent·e·s</div>
+      </div>
+      <div class="bg-paper text-center px-3 py-[clamp(14px,3vw,18px)]">
+        <div class="font-display font-black text-[clamp(1.8rem,5vw,2.7rem)] leading-none">22</div>
+        <div class="font-mono text-[.62rem] uppercase tracking-[.12em] text-muted mt-1.5">Bénévoles</div>
+      </div>
+      <div class="bg-paper text-center px-3 py-[clamp(14px,3vw,18px)]">
+        <div class="font-display font-black text-[clamp(1.8rem,5vw,2.7rem)] leading-none">2021</div>
+        <div class="font-mono text-[.62rem] uppercase tracking-[.12em] text-muted mt-1.5">Depuis</div>
+      </div>
+      <div class="bg-paper text-center px-3 py-[clamp(14px,3vw,18px)]">
+        <div class="font-display font-black text-[clamp(1.8rem,5vw,2.7rem)] leading-none text-red">∞</div>
+        <div class="font-mono text-[.62rem] uppercase tracking-[.12em] text-muted mt-1.5">Idées en cours</div>
+      </div>
+    </div>
   </div>
+</section>
+
+<section id="agenda" class="border-b-2 border-ink py-[var(--section-y)]">
+  <div class="wrap">
+    {% include "public/_section_head.html" with kicker="Prochain rendez-vous" title="À l'affiche" more_url=agenda_url more_label="Tout l'agenda" %}
+
+    {% if featured_event %}
+    {# Event vedette (« à la une » ou prochain à venir) en grand format. #}
+    <div class="grid min-[881px]:grid-cols-[1.05fr_1fr] border-[3px] border-ink bg-paper shadow-hard-lg rv">
+      <div class="relative min-h-[clamp(210px,38vw,340px)] border-b-[3px] min-[881px]:border-b-0 min-[881px]:border-r-[3px] border-ink overflow-hidden bg-[radial-gradient(120%_120%_at_0%_0%,#2a2520_0%,#15120E_60%)] flex items-end p-[22px] text-paper">
+        {% include "_thumb_srcset.html" with image=featured_event.cover sizes="(min-width: 881px) 640px, 96vw" img_class="absolute inset-0 w-full h-full object-cover" %}
+        {% if featured_event.kind %}
+        <span class="absolute top-[18px] left-[18px] bg-red text-white font-mono font-bold text-[.66rem] uppercase tracking-[.14em] px-[11px] py-1.5 border-2 border-white">{{ featured_event.kind }}</span>
+        {% endif %}
+        <div class="relative font-display font-black text-[clamp(1.9rem,5vw,2.4rem)] leading-[.9]">{{ featured_event.starts_at|date:"d" }}<br>{{ featured_event.starts_at|date:"M"|upper }}</div>
+      </div>
+      <div class="p-[clamp(22px,4vw,34px)]">
+        {% if featured_event.kind %}
+        <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ featured_event.kind }}</p>
+        {% endif %}
+        <h3 class="font-display font-black text-[clamp(1.6rem,4.6vw,2.5rem)] leading-[1.02] mt-2 mb-3.5">{{ featured_event.title }}</h3>
+        {% if featured_event.description %}
+        <p class="text-ink-soft max-w-[40ch]">{{ featured_event.description|plain_excerpt|truncatewords:28 }}</p>
+        {% endif %}
+        <div class="flex flex-wrap gap-[10px] my-5">
+          <span class="font-mono text-[.7rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[10px] py-1.5">◷ {{ featured_event.starts_at|date:"d F · H\hi" }}{% if featured_event.ends_at %} → {{ featured_event.ends_at|date:"H\hi" }}{% endif %}</span>
+          {% if featured_event.location %}
+          <span class="font-mono text-[.7rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[10px] py-1.5">◉ {{ featured_event.location }}</span>
+          {% endif %}
+          {% if featured_event.price %}
+          <span class="font-mono text-[.7rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[10px] py-1.5">◎ {{ featured_event.price }}</span>
+          {% endif %}
+        </div>
+        <a href="{{ featured_event.get_absolute_url }}" class="btn btn--red">Infos & programme</a>
+      </div>
+    </div>
+
+    {% if upcoming_events %}
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,265px),1fr))] gap-[clamp(16px,2.4vw,22px)] mt-[clamp(22px,4vw,30px)]">
+      {% for event in upcoming_events %}
+      {% include "public/_event_card.html" %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="border-2 border-dashed border-[var(--line)] p-[clamp(26px,5vw,44px)] text-center font-mono uppercase tracking-[.08em] text-[.78rem] text-muted">Rien à l'affiche pour l'instant — revenez bientôt.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section id="actus" class="border-b-2 border-ink py-[var(--section-y)]">
+  <div class="wrap">
+    {% include "public/_section_head.html" with kicker="Du neuf" title="Actus" more_url=actus_url more_label="Toutes les actus" %}
+
+    {% if recent_news %}
+    <div class="border-t-2 border-ink">
+      {% for news in recent_news %}
+      {% include "public/_news_row.html" %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="border-2 border-dashed border-[var(--line)] p-[clamp(26px,5vw,44px)] text-center font-mono uppercase tracking-[.08em] text-[.78rem] text-muted">Aucune actu pour le moment.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section id="adherer" class="relative overflow-hidden border-b-2 border-ink bg-ink text-paper py-[var(--section-y)]">
+  <div class="wrap relative z-[2] text-center">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Rejoins le mouvement</p>
+    <h2 class="font-display font-black text-[clamp(2.1rem,7vw,4.2rem)] leading-none tracking-[-.02em] mt-2">Adhère, fais du bruit avec nous.</h2>
+    <p class="max-w-[44ch] mx-auto mt-[18px] text-paper-2">Bénévole, adhérent·e ou simple curieux·se : il y a une place pour toi. L'adhésion se fait en ligne, en deux minutes, via HelloAsso.</p>
+    <a href="{% url 'adherer' %}" class="btn btn--red mt-[30px]">Adhérer en ligne →</a>
+  </div>
+  <div class="waveform absolute left-0 bottom-0 w-full h-[clamp(60px,12vw,90px)] opacity-50" data-baseline="false" data-animated="true"></div>
 </section>
 {% endblock %}

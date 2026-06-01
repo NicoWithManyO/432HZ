@@ -85,7 +85,7 @@ class EventForm(GalleryFormMixin, forms.ModelForm):
     class Meta:
         model = Event
         fields = [
-            "title", "slug", "kind", "starts_at", "ends_at",
+            "title", "slug", "kind", "is_featured", "starts_at", "ends_at",
             "location", "price", "description", "cover",
         ]
         widgets = {

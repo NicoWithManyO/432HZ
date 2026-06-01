@@ -1,6 +1,8 @@
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -9,6 +11,25 @@ from apps.events.models import Event
 from apps.news.models import News
 from apps.pages.models import HomeContent, TickerItem
 from apps.pages.punchline import render_punchline
+
+
+def test_no_multiline_django_comments():
+    """Garde-fou : un commentaire `{# … #}` Django ne tient QUE sur une ligne. Étalé sur
+    plusieurs lignes, il est rendu littéralement (et exécute les tags internes). Pour tout
+    commentaire multi-ligne, utiliser `{% comment %}…{% endcomment %}`."""
+    root = Path(settings.BASE_DIR)
+    offenders = []
+    for template in root.glob("**/*.html"):
+        if any(part in {".venv", "node_modules", "staticfiles"} for part in template.parts):
+            continue
+        for lineno, line in enumerate(template.read_text(encoding="utf-8").splitlines(), 1):
+            idx = line.find("{#")
+            # `{#` ouvert sans `#}` fermant après lui sur la même ligne → commentaire multi-ligne.
+            if idx != -1 and "#}" not in line[idx:]:
+                offenders.append(f"{template.relative_to(root)}:{lineno}")
+    assert not offenders, (
+        "Commentaire {# #} multi-ligne détecté (utiliser {% comment %}) : " + ", ".join(offenders)
+    )
 
 
 def test_render_punchline_escapes_plain_text():
@@ -193,3 +214,78 @@ def test_unknown_url_renders_404_template(client):
     response = client.get("/cette-page-nexiste-pas/")
     assert response.status_code == 404
     assert "Hors fréquence" in response.content.decode()
+
+
+# --- Accueil enrichi (P3.3) : feature « à la une », grilles, états vides ---
+
+
+@pytest.mark.django_db
+def test_home_featured_defaults_to_nearest_upcoming(client):
+    near = timezone.now() + timedelta(days=2)
+    far = timezone.now() + timedelta(days=20)
+    nearest = Event.objects.create(title="Le plus proche", starts_at=near, status=PUBLISHED)
+    Event.objects.create(title="Le plus lointain", starts_at=far, status=PUBLISHED)
+    # Aucun event coché « à la une » → la vedette est le prochain event.
+    context = client.get(reverse("home")).context
+    assert context["featured_event"] == nearest
+    # La vedette n'est pas dupliquée dans la grille des suivants.
+    assert nearest not in context["upcoming_events"]
+
+
+@pytest.mark.django_db
+def test_home_featured_prefers_flagged_event(client):
+    near = timezone.now() + timedelta(days=2)
+    far = timezone.now() + timedelta(days=20)
+    Event.objects.create(title="Le plus proche", starts_at=near, status=PUBLISHED)
+    flagged = Event.objects.create(
+        title="La une choisie", starts_at=far, status=PUBLISHED, is_featured=True
+    )
+    # Un event coché « à la une » prime sur le plus proche.
+    assert client.get(reverse("home")).context["featured_event"] == flagged
+
+
+@pytest.mark.django_db
+def test_home_hides_draft_and_past_from_upcoming(client):
+    soon = timezone.now() + timedelta(days=5)
+    past = timezone.now() - timedelta(days=5)
+    Event.objects.create(title="À venir publié", starts_at=soon, status=PUBLISHED)
+    Event.objects.create(title="À venir brouillon", starts_at=soon)
+    Event.objects.create(title="Déjà passé", starts_at=past, status=PUBLISHED)
+
+    html = client.get(reverse("home")).content.decode()
+    assert "À venir publié" in html
+    assert "À venir brouillon" not in html
+    # Ni le brouillon ni le passé n'apparaissent dans « à l'affiche ».
+    context = client.get(reverse("home")).context
+    assert all(e.title != "Déjà passé" for e in context["upcoming_events"])
+    assert context["featured_event"].title == "À venir publié"
+    assert "Déjà passé" not in html
+
+
+@pytest.mark.django_db
+def test_home_lists_recent_published_news(client):
+    News.objects.create(title="Actu en home", status=PUBLISHED)
+    News.objects.create(title="Actu cachée")
+    html = client.get(reverse("home")).content.decode()
+    assert "Actu en home" in html
+    assert "Actu cachée" not in html
+
+
+@pytest.mark.django_db
+def test_home_empty_states_render_without_content(client):
+    Event.objects.all().delete()
+    News.objects.all().delete()
+    response = client.get(reverse("home"))
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert response.context["featured_event"] is None
+    # Les sections restent visibles avec un message d'état vide à la charte.
+    assert "Rien à l'affiche pour l'instant" in html
+    assert "Aucune actu pour le moment" in html
+
+
+@pytest.mark.django_db
+def test_home_renders_section_headings(client):
+    html = client.get(reverse("home")).content.decode()
+    for heading in ("À l'affiche", "Actus"):
+        assert heading in html

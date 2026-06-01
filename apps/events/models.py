@@ -31,6 +31,7 @@ class EventQuerySet(PublishableQuerySet):
 class Event(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
     title = models.CharField(max_length=200)
     kind = models.CharField(max_length=40, blank=True, help_text="Concert, performance, spectacle…")
+    is_featured = models.BooleanField(default=False, help_text="Mettre à la une sur l'accueil.")
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField(null=True, blank=True)
     location = models.CharField(max_length=200, blank=True)
