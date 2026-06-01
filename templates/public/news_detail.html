@@ -2,7 +2,8 @@
 {% load thumbnail pages %}
 
 {% block title %}{{ news.title }} · Actus · 432 Hz{% endblock %}
-{% block meta_description %}{{ news.description|plain_excerpt|truncatewords:30 }}{% endblock %}
+{# Même extrait que og:description (calculé dans la vue) → une seule source de vérité. #}
+{% block meta_description %}{{ og_description }}{% endblock %}
 
 {% block content %}
 <article class="py-[var(--section-y)]">

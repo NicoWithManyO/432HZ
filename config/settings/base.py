@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
     # Apps métier
     "apps.common",
     "apps.accounts",
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     "apps.events",
     "apps.news",
     "apps.pages",
+    "apps.seo",
     # Présentation de l'admin convivial (namespace url `gestion`)
     "apps.gestion",
     # Vignettes WebP/srcset (médiathèque)
@@ -62,6 +64,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.seo.context_processors.seo",
             ],
         },
     },
@@ -139,6 +142,8 @@ THUMBNAIL_ALIASES = {
     "": {
         "card": {"size": (320, 240), "crop": "smart"},
         "card2x": {"size": (640, 480), "crop": "smart"},
+        # Image de partage Open Graph (ratio ~1.91:1 recommandé par les réseaux).
+        "og": {"size": (1200, 630), "crop": "smart"},
     },
 }
 

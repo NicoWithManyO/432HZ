@@ -1,9 +1,13 @@
 from django.db.models import Prefetch
+from django.utils.text import Truncator
 from django.views.generic import DetailView, ListView, TemplateView
+from easy_thumbnails.exceptions import InvalidImageFormatError
+from easy_thumbnails.files import get_thumbnailer
 
 from apps.events.models import Event, EventImage
 from apps.news.models import News, NewsImage
 from apps.pages.models import HomeContent
+from apps.pages.templatetags.pages import plain_excerpt
 
 
 class HomeView(TemplateView):
@@ -53,7 +57,44 @@ class AgendaListView(ListView):
         return context
 
 
-class EventDetailView(DetailView):
+class ArticleOpenGraphMixin:
+    """Métadonnées Open Graph « article » communes aux détails event/actu.
+
+    Pose `og_type=article`, titre, extrait, image cover (URL absolue, vignette `og`)
+    et date de publication. Surcharge les défauts « website » du context processor SEO.
+    """
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        obj = self.object
+        context["og_type"] = "article"
+        context["og_title"] = obj.title
+        # On ne pose une description que si l'extrait porte vraiment du texte : un HTML
+        # « vide » (ex. <p></p>) donnerait sinon une description vide au lieu du défaut.
+        excerpt = plain_excerpt(obj.description) if obj.description else ""
+        if excerpt:
+            context["og_description"] = Truncator(excerpt).words(30)
+        if obj.published_at:
+            context["article_published_time"] = obj.published_at.isoformat()
+        cover_url = self._absolute_cover_url(obj.cover)
+        if cover_url:
+            context["og_image_url"] = cover_url
+            context["og_cover_url"] = cover_url  # réutilisé par le JSON-LD
+        return context
+
+    def _absolute_cover_url(self, cover):
+        """URL absolue de la vignette Open Graph, ou None si pas de cover / vignette
+        non générable (fichier disque manquant) → on garde le logo par défaut."""
+        if not cover or not cover.file:
+            return None
+        try:
+            thumb = get_thumbnailer(cover.file)["og"]
+        except InvalidImageFormatError:
+            return None
+        return self.request.build_absolute_uri(thumb.url)
+
+
+class EventDetailView(ArticleOpenGraphMixin, DetailView):
     """Détail d'un event publié (404 sur brouillon ou slug inconnu)."""
 
     # `published()` → 404 auto sur draft. select_related/prefetch : cover + galerie en
@@ -66,6 +107,35 @@ class EventDetailView(DetailView):
         )
     )
     template_name = "public/agenda_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["event_jsonld"] = self._build_jsonld(self.object, context.get("og_cover_url"))
+        return context
+
+    def _build_jsonld(self, event, image_url):
+        """Données structurées Schema.org Event (cf https://schema.org/Event)."""
+        data = {
+            "@context": "https://schema.org",
+            "@type": "Event",
+            "name": event.title,
+            "startDate": event.starts_at.isoformat(),
+            "eventStatus": "https://schema.org/EventScheduled",
+            "url": self.request.build_absolute_uri(event.get_absolute_url()),
+        }
+        if event.ends_at:
+            data["endDate"] = event.ends_at.isoformat()
+        if event.location:
+            data["location"] = {"@type": "Place", "name": event.location}
+        if event.description:
+            data["description"] = plain_excerpt(event.description)
+        if image_url:
+            data["image"] = [image_url]
+        if event.price:
+            # `price` est un texte libre (« Entrée libre », « 8 € ») : on le décrit
+            # comme une offre sans prétendre à un montant numérique normalisé.
+            data["offers"] = {"@type": "Offer", "description": event.price}
+        return data
 
 
 class ActusListView(ListView):
@@ -80,7 +150,7 @@ class ActusListView(ListView):
         return News.objects.published()
 
 
-class NewsDetailView(DetailView):
+class NewsDetailView(ArticleOpenGraphMixin, DetailView):
     """Détail d'une actu publiée (404 sur brouillon ou slug inconnu)."""
 
     queryset = (

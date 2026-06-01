@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% load thumbnail pages %}
+{% load thumbnail pages seo %}
 
 {% block title %}{{ event.title }} · Agenda · 432 Hz{% endblock %}
-{% block meta_description %}{{ event.description|plain_excerpt|truncatewords:30 }}{% endblock %}
+{# Même extrait que og:description (calculé dans la vue) → une seule source de vérité. #}
+{% block meta_description %}{{ og_description }}{% endblock %}
 
 {% block content %}
 <article class="py-[var(--section-y)]">
@@ -41,4 +42,5 @@
     </div>
   </div>
 </article>
+<script type="application/ld+json" id="event-jsonld">{{ event_jsonld|ld_json }}</script>
 {% endblock %}
