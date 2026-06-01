@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %}{% load pages %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -17,26 +17,7 @@
 <body>
   <a class="skip-link" href="#main">Aller au contenu</a>
 
-  {% block ticker_bar %}
-  {% comment %}
-    Ticker — bandeau noir défilant. Deux copies identiques côte à côte ; l'animation
-    translate de -50% (soit exactement une copie) → boucle sans raccord. La piste est en
-    flex (les blancs HTML entre items flex sont ignorés : pas d'espace parasite donc pas
-    de « trou »), et les « + » portent leur propre marge (espacement constant, raccord compris).
-  {% endcomment %}
-  <div class="ticker bg-ink text-paper overflow-hidden border-b-2 border-ink" aria-hidden="true">
-    <div class="animate-ticker flex w-max py-2 font-mono uppercase tracking-[.18em] text-[.74rem]">
-      {% block ticker %}
-        {# 8 phrases : la piste dépasse toujours le viewport (cf keyframe -12.5% = -100%/8). #}
-        {% for i in "12345678" %}
-        <span class="flex shrink-0 items-center">
-          <span>Spectacle vivant</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Concerts</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Performances</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Fêtes de quartier</span><b class="text-red font-normal mx-[1.3em]">+</b><span>Annecy</span><b class="text-red font-normal mx-[1.3em]">+</b>
-        </span>
-        {% endfor %}
-      {% endblock %}
-    </div>
-  </div>
-  {% endblock ticker_bar %}
+  {% block ticker_bar %}{% ticker_bar %}{% endblock %}
 
   {% block header %}
   {# Header sticky — logo + nav desktop + burger mobile. #}

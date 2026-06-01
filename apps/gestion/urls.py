@@ -15,6 +15,20 @@ app_name = "gestion"
 
 urlpatterns = [
     path("", views.DashboardView.as_view(), name="dashboard"),
+    # Contenus du site (hero accueil + bandeau défilant)
+    path("accueil/textes/", views.HomeContentUpdateView.as_view(), name="home-content-update"),
+    path("bandeau/ajouter/", views.TickerItemCreateView.as_view(), name="ticker-create"),
+    path(
+        "bandeau/<uuid:pk>/supprimer/",
+        views.TickerItemDeleteView.as_view(),
+        name="ticker-delete",
+    ),
+    path(
+        "bandeau/<uuid:pk>/mise-en-avant/",
+        views.TickerItemToggleHighlightView.as_view(),
+        name="ticker-toggle-highlight",
+    ),
+    path("bandeau/<uuid:pk>/deplacer/", views.TickerItemMoveView.as_view(), name="ticker-move"),
     path("connexion/", LoginView.as_view(template_name="gestion/login.html"), name="login"),
     path("deconnexion/", LogoutView.as_view(), name="logout"),
     path("invitation/<str:token>/", accept_invitation, name="accept-invitation"),

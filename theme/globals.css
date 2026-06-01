@@ -86,22 +86,22 @@ html.js .rv.pending {
   transform: translateY(18px);
 }
 
-/* Ticker : défilement continu. La piste répète la phrase 8 fois (cf base.html) pour
-   toujours dépasser la largeur du viewport (sinon du vide apparaît à droite). On translate
-   d'EXACTEMENT une phrase (-100% / 8 = -12.5%) : comme les 8 phrases sont identiques, le
-   retour à 0 est invisible (boucle sans raccord), et la vitesse reste constante.
-   ⚠ Si on change le nombre de phrases dans base.html, ajuster ce pourcentage (-100% / N). */
+/* Ticker : défilement continu. La piste contient 2 séquences identiques (la 2e clonée
+   par main.js) ; on translate d'EXACTEMENT une séquence (-50% de la piste) → boucle sans
+   raccord, indépendamment du nombre d'items. La durée (vitesse constante) est posée en
+   inline par le JS. Sans JS : pas de classe `ticker--running` → statique, pas de défilement
+   cassé (une seule séquence visible). */
 @keyframes ticker-slide {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-12.5%);
+    transform: translateX(-50%);
   }
 }
 
-.animate-ticker {
-  animation: ticker-slide 28s linear infinite;
+.animate-ticker.ticker--running {
+  animation: ticker-slide linear infinite;
   will-change: transform;
 }
 
@@ -198,6 +198,28 @@ html.js .rv.pending {
     color: var(--paper);
   }
 
+  /* Bouton-icône carré (actions de liste en gestion : ▲ ▼ ★ ✕). */
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    transition: transform 0.1s;
+  }
+  .btn-icon:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+  }
+  .btn-icon:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
   /* Formulaire d'admin : style appliqué aux champs rendus par Django (as_p / partial),
      pour ne pas répéter les classes sur chaque widget. Labels mono, champs cadrés. */
   .gestion-form label {
@@ -212,7 +234,7 @@ html.js .rv.pending {
   /* `:not(.sr-only)` : la largeur 100% ne doit pas s'appliquer aux champs masqués
      (textarea remplacé par Tiptap, input file caché dans le label) — sinon, plus
      spécifique que `.sr-only`, elle les rendait larges et en débordement horizontal. */
-  .gestion-form input:not(.sr-only),
+  .gestion-form input:not(.sr-only):not([type="checkbox"]),
   .gestion-form select:not(.sr-only),
   .gestion-form textarea:not(.sr-only) {
     width: 100%;
@@ -312,7 +334,7 @@ html.js .rv.pending {
     scroll-behavior: auto;
   }
 
-  .animate-ticker {
+  .animate-ticker.ticker--running {
     animation: none;
   }
 

@@ -16,6 +16,7 @@ from apps.events.models import Event, EventImage
 from apps.gestion.forms import EventForm
 from apps.media.models import Image
 from apps.news.models import News
+from apps.pages.models import HomeContent, TickerItem
 
 
 def test_clean_html_keeps_allowed_tags():
@@ -435,3 +436,83 @@ def test_owner_profile_validation_not_toggled(owner_client):
     owner_client.post(reverse("gestion:profile-toggle-validation", args=[owner_profile.pk]))
     owner_profile.refresh_from_db()
     assert owner_profile.is_validated is True
+
+
+# --- Contenus du site (hero accueil + bandeau) ---
+
+
+@pytest.mark.django_db
+def test_ticker_create_requires_login(client):
+    response = client.post(reverse("gestion:ticker-create"), {"text": "X"})
+    assert response.status_code == 302  # anonyme → login
+
+
+@pytest.mark.django_db
+def test_ticker_create_forbidden_for_unvalidated(client):
+    user = User.objects.create_user("pending", password="pw-test-1234")
+    Profile.objects.create(user=user, is_validated=False)
+    client.force_login(user)
+    assert client.post(reverse("gestion:ticker-create"), {"text": "X"}).status_code == 403
+
+
+@pytest.mark.django_db
+def test_ticker_create_appends_at_end(validated_client):
+    TickerItem.objects.all().delete()
+    TickerItem.objects.create(text="Premier", order=0)
+    validated_client.post(reverse("gestion:ticker-create"), {"text": "Nouveau"})
+    created = TickerItem.objects.get(text="Nouveau")
+    assert created.order == 1
+
+
+@pytest.mark.django_db
+def test_ticker_create_invalid_surfaces_error(validated_client):
+    # Texte vide → rien créé, et l'échec remonte via un message (PRG).
+    TickerItem.objects.all().delete()
+    response = validated_client.post(
+        reverse("gestion:ticker-create"), {"text": ""}, follow=True
+    )
+    assert TickerItem.objects.count() == 0
+    assert "non ajoutée" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_ticker_delete(validated_client):
+    item = TickerItem.objects.create(text="À supprimer", order=0)
+    validated_client.post(reverse("gestion:ticker-delete", args=[item.pk]))
+    assert not TickerItem.objects.filter(pk=item.pk).exists()
+
+
+@pytest.mark.django_db
+def test_ticker_toggle_highlight(validated_client):
+    item = TickerItem.objects.create(text="X", order=0, highlighted=False)
+    validated_client.post(reverse("gestion:ticker-toggle-highlight", args=[item.pk]))
+    item.refresh_from_db()
+    assert item.highlighted is True
+
+
+@pytest.mark.django_db
+def test_ticker_move_swaps_order_with_neighbor(validated_client):
+    TickerItem.objects.all().delete()
+    first = TickerItem.objects.create(text="A", order=0)
+    second = TickerItem.objects.create(text="B", order=1)
+    validated_client.post(reverse("gestion:ticker-move", args=[second.pk]) + "?dir=up")
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert second.order == 0
+    assert first.order == 1
+
+
+@pytest.mark.django_db
+def test_home_content_update(validated_client):
+    home = HomeContent.load()
+    validated_client.post(
+        reverse("gestion:home-content-update"),
+        {
+            "subtitle": "Nouveau sous-titre",
+            "punchline": "Une [r]punchline[/r].",
+            "intro": "Intro modifiée.",
+        },
+    )
+    home.refresh_from_db()
+    assert home.subtitle == "Nouveau sous-titre"
+    assert home.punchline == "Une [r]punchline[/r]."

@@ -31,6 +31,34 @@ if (burger && menu) {
   });
 }
 
+// --- Bandeau défilant (ticker) : remplissage + clonage pour un défilement sans raccord ---
+// La séquence rendue côté serveur est d'abord complétée jusqu'à dépasser la largeur visible
+// (pas de vide à droite même avec peu d'items), puis dupliquée : la piste = 2 séquences
+// identiques, et le keyframe translate de -50% boucle de façon invisible (cf globals.css).
+const ticker = document.querySelector("[data-ticker]");
+if (ticker) {
+  const track = ticker.querySelector("[data-ticker-track]");
+  const seq = ticker.querySelector("[data-ticker-seq]");
+  if (track && seq && seq.children.length) {
+    const SPEED = 60; // vitesse de défilement en px/s
+    const base = Array.from(seq.children).map((node) => node.cloneNode(true));
+    // 1. Remplit la séquence tant qu'elle ne couvre pas la largeur visible. Garde-fou
+    //    `passes` : si les clones mesuraient 0px (CSS pas encore appliqué), la boucle
+    //    ne tournerait pas indéfiniment.
+    let passes = 0;
+    while (seq.scrollWidth < ticker.offsetWidth && passes < 50) {
+      base.forEach((node) => seq.appendChild(node.cloneNode(true)));
+      passes += 1;
+    }
+    // 2. Duplique la séquence entière (la 2e copie sert de tampon pour la boucle).
+    const seqWidth = seq.scrollWidth;
+    track.appendChild(seq.cloneNode(true));
+    // 3. Durée = largeur / vitesse (cadence constante), puis active l'animation.
+    track.style.animationDuration = `${seqWidth / SPEED}s`;
+    track.classList.add("ticker--running");
+  }
+}
+
 // --- Reveals au scroll (IntersectionObserver) ---
 const revealables = document.querySelectorAll(".rv");
 if (revealables.length && "IntersectionObserver" in window) {

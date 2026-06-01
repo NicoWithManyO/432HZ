@@ -1,5 +1,6 @@
+from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -18,16 +19,97 @@ from apps.accounts.models import Invitation, Profile
 from apps.accounts.permissions import OwnerRequiredMixin, ValidatedRequiredMixin
 from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
-from apps.gestion.forms import EventForm, InvitationForm, NewsForm
+from apps.gestion.forms import (
+    EventForm,
+    HomeContentForm,
+    InvitationForm,
+    NewsForm,
+    TickerItemForm,
+)
 from apps.media.forms import ImageMetaForm, ImageUploadForm
 from apps.media.models import Image
 from apps.news.models import News
+from apps.pages.models import HomeContent, TickerItem
 
 
 class DashboardView(ValidatedRequiredMixin, TemplateView):
-    """Tableau de bord : point d'entrée de la gestion conviviale."""
+    """Tableau de bord : point d'entrée de la gestion + édition des contenus du site
+    (hero de l'accueil, bandeau défilant)."""
 
     template_name = "gestion/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["ticker_items"] = TickerItem.objects.all()
+        context["ticker_form"] = TickerItemForm()
+        context["home_form"] = HomeContentForm(instance=HomeContent.load())
+        return context
+
+
+# --- Contenus du site (hero accueil + bandeau) ---
+
+
+class HomeContentUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        form = HomeContentForm(request.POST, instance=HomeContent.load())
+        if form.is_valid():
+            form.save()
+        else:
+            # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
+            messages.error(request, "Hero non enregistré :\n" + form.errors.as_text())
+        return redirect("gestion:dashboard")
+
+
+class TickerItemCreateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        form = TickerItemForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            # Nouvel item ajouté en fin de bandeau.
+            last = TickerItem.objects.aggregate(Max("order"))["order__max"]
+            item.order = last + 1 if last is not None else 0
+            item.save()
+        else:
+            messages.error(request, "Phrase non ajoutée :\n" + form.errors.as_text())
+        return redirect("gestion:dashboard")
+
+
+class TickerItemDeleteView(ValidatedRequiredMixin, View):
+    def post(self, request, pk):
+        get_object_or_404(TickerItem, pk=pk).delete()
+        return redirect("gestion:dashboard")
+
+
+class TickerItemToggleHighlightView(ValidatedRequiredMixin, View):
+    def post(self, request, pk):
+        item = get_object_or_404(TickerItem, pk=pk)
+        item.highlighted = not item.highlighted
+        item.save(update_fields=["highlighted"])
+        return redirect("gestion:dashboard")
+
+
+class TickerItemMoveView(ValidatedRequiredMixin, View):
+    def post(self, request, pk):
+        item = get_object_or_404(TickerItem, pk=pk)
+        # Échange l'ordre avec le voisin immédiat dans le sens demandé.
+        direction = request.GET.get("dir")
+        if direction == "up":
+            neighbor = (
+                TickerItem.objects.filter(order__lt=item.order).order_by("-order").first()
+            )
+        elif direction == "down":
+            neighbor = (
+                TickerItem.objects.filter(order__gt=item.order).order_by("order").first()
+            )
+        else:
+            neighbor = None
+        if neighbor is not None:
+            item.order, neighbor.order = neighbor.order, item.order
+            # Les deux écritures forment un tout : sinon un échec partiel laisserait
+            # deux phrases au même `order`.
+            with transaction.atomic():
+                TickerItem.objects.bulk_update([item, neighbor], ["order"])
+        return redirect("gestion:dashboard")
 
 
 # --- Médiathèque ---

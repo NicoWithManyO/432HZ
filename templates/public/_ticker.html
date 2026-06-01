@@ -1,0 +1,14 @@
+{% comment %}
+  Bandeau défilant. Une seule séquence rendue côté serveur ([data-ticker-seq]) ;
+  main.js la remplit puis la duplique pour un défilement sans raccord, quel que soit
+  le nombre d'items. Sans JS : statique, lisible, non cassé. Masqué si aucun item.
+{% endcomment %}
+{% if items %}
+<div class="ticker bg-ink text-paper overflow-hidden border-b-2 border-ink" data-ticker aria-hidden="true">
+  <div class="animate-ticker flex w-max py-2 font-mono uppercase tracking-[.18em] text-[.74rem]" data-ticker-track>
+    <div class="flex shrink-0 items-center" data-ticker-seq>
+      {% for item in items %}<span class="{% if item.highlighted %}text-red{% else %}text-paper{% endif %}">{{ item.text }}</span><b class="text-red font-normal mx-[1.3em]">+</b>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}

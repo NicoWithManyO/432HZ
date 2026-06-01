@@ -5,9 +5,57 @@
 {% block gestion %}
 <span class="font-mono uppercase tracking-[.16em] text-[.72rem] text-red">Gestion 432 Hz</span>
 <h1 class="font-display font-black text-[clamp(2.2rem,6vw,3.4rem)] leading-none mt-2 mb-2">Tableau de bord</h1>
-<p class="text-ink-soft mb-8">Connecté·e en tant que <strong>{{ user.username }}</strong> · {{ user.profile.get_role_display }}.</p>
+<p class="text-ink-soft mb-10">Connecté·e en tant que <strong>{{ user.username }}</strong> · {{ user.profile.get_role_display }}.</p>
 
-{% comment %}Raccourcis (Nouvel event / Nouvelle actu / Médiathèque) et listes récentes :
-   câblés au fil des sous-étapes P2.1–P2.3, dès que les routes existent.{% endcomment %}
-<p class="font-mono uppercase tracking-[.12em] text-[.72rem] text-muted">Les raccourcis events, actus et médiathèque arrivent.</p>
+{# --- Hero de l'accueil --- #}
+<section class="mb-12 border-2 border-ink p-[clamp(18px,3vw,28px)]">
+  <h2 class="font-display font-black text-[clamp(1.4rem,4vw,2rem)] leading-none mb-1">Hero de l'accueil</h2>
+  <p class="text-ink-soft text-[.92rem] mb-5">Le bloc d'introduction en haut de la page d'accueil.</p>
+  <form method="post" action="{% url 'gestion:home-content-update' %}" class="gestion-form flex flex-col gap-4">
+    {% csrf_token %}
+    {{ home_form.as_p }}
+    <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+  </form>
+</section>
+
+{# --- Bandeau défilant --- #}
+<section class="border-2 border-ink p-[clamp(18px,3vw,28px)]">
+  <h2 class="font-display font-black text-[clamp(1.4rem,4vw,2rem)] leading-none mb-1">Bandeau défilant</h2>
+  <p class="text-ink-soft text-[.92rem] mb-5">Les phrases qui défilent en haut du site. « Mise en avant » ⇒ phrase en rouge.</p>
+
+  <ul class="flex flex-col gap-2 mb-6">
+    {% for item in ticker_items %}
+    <li class="flex items-center gap-2 border-2 border-line p-2">
+      <span class="flex-1 font-mono uppercase tracking-[.1em] text-[.8rem] {% if item.highlighted %}text-red{% endif %}">{{ item.text }}</span>
+
+      <form method="post" action="{% url 'gestion:ticker-move' item.pk %}?dir=up" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-icon" aria-label="Monter"{% if forloop.first %} disabled{% endif %}>▲</button>
+      </form>
+      <form method="post" action="{% url 'gestion:ticker-move' item.pk %}?dir=down" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-icon" aria-label="Descendre"{% if forloop.last %} disabled{% endif %}>▼</button>
+      </form>
+      <form method="post" action="{% url 'gestion:ticker-toggle-highlight' item.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-icon {% if item.highlighted %}bg-red text-paper border-red{% endif %}"
+                aria-label="Mise en avant" aria-pressed="{{ item.highlighted|yesno:'true,false' }}">★</button>
+      </form>
+      <form method="post" action="{% url 'gestion:ticker-delete' item.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-icon text-red-deep" aria-label="Supprimer">✕</button>
+      </form>
+    </li>
+    {% empty %}
+    <li class="text-ink-soft text-[.9rem]">Aucune phrase — le bandeau est masqué sur le site.</li>
+    {% endfor %}
+  </ul>
+
+  <form method="post" action="{% url 'gestion:ticker-create' %}" class="gestion-form flex flex-wrap items-end gap-3">
+    {% csrf_token %}
+    <div class="flex-1 min-w-[200px]">{{ ticker_form.text.label_tag }}{{ ticker_form.text }}</div>
+    <label class="flex items-center gap-2 pb-2 text-[.9rem]">{{ ticker_form.highlighted }} Mise en avant</label>
+    <button type="submit" class="btn btn--red">Ajouter</button>
+  </form>
+</section>
 {% endblock %}

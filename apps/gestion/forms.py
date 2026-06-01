@@ -6,6 +6,7 @@ from apps.accounts.models import Invitation
 from apps.events.models import Event
 from apps.media.models import Image
 from apps.news.models import News
+from apps.pages.models import HomeContent, TickerItem
 
 # Format attendu/rendu par l'input HTML <input type="datetime-local">.
 _DATETIME_LOCAL = "%Y-%m-%dT%H:%M"
@@ -128,3 +129,25 @@ class NewsForm(GalleryFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Slug optionnel : dérivé du titre à la création s'il est laissé vide.
         self.fields["slug"].required = False
+
+
+class TickerItemForm(forms.ModelForm):
+    """Ajout d'une phrase du bandeau (l'ordre est posé par la vue)."""
+
+    class Meta:
+        model = TickerItem
+        fields = ["text", "highlighted"]
+
+
+class HomeContentForm(forms.ModelForm):
+    """Édition des trois textes du hero de l'accueil."""
+
+    class Meta:
+        model = HomeContent
+        fields = ["subtitle", "punchline", "intro"]
+        help_texts = {
+            "punchline": "Entourez des mots de [r]…[/r] pour les afficher en rouge.",
+        }
+        widgets = {
+            "intro": forms.Textarea(attrs={"rows": 3}),
+        }

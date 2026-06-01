@@ -74,6 +74,13 @@
 
 {% block content %}
 <section class="wrap py-[clamp(28px,5vw,52px)]">
+  {% if messages %}
+  <ul class="flex flex-col gap-2 mb-8" role="alert">
+    {% for message in messages %}
+    <li class="border-2 border-ink p-3 font-mono text-[.78rem] {% if message.tags == 'error' %}bg-red text-paper{% else %}bg-paper-2{% endif %}">{{ message|linebreaksbr }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   {% block gestion %}{% endblock %}
 </section>
 {% endblock %}
