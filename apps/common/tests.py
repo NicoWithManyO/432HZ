@@ -44,6 +44,18 @@ def test_blanked_slug_regenerated_is_recorded():
 
 
 @pytest.mark.django_db
+def test_slug_change_excluded_from_update_fields_records_nothing():
+    # Slug modifié en mémoire mais hors update_fields → non persisté, donc non historisé.
+    event = Event.objects.create(title="Concert", starts_at=timezone.now())
+    original = event.slug
+    event.slug = "non-persiste"
+    event.save(update_fields=["title"])
+    assert SlugHistory.objects.count() == 0
+    event.refresh_from_db()
+    assert event.slug == original
+
+
+@pytest.mark.django_db
 def test_reverting_to_old_slug_purges_its_entry():
     # Revenir à un slug déjà historisé le rend de nouveau « vivant » → entrée purgée.
     event = Event.objects.create(title="Concert", starts_at=timezone.now())

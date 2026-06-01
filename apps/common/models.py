@@ -97,8 +97,12 @@ class SluggedModel(models.Model):
         # Slug en base AVANT écriture : non-nul ⇒ mise à jour (le PK UUID, lui, est
         # déjà posé à l'instanciation et ne distingue donc pas création d'update).
         previous_slug = self._db_slug()
+        # Si l'appelant restreint les champs écrits sans le slug, celui-ci n'est pas
+        # persisté : on n'historise pas un changement qui n'a pas lieu en base.
+        update_fields = kwargs.get("update_fields")
+        slug_written = update_fields is None or "slug" in update_fields
         super().save(*args, **kwargs)
-        if previous_slug and previous_slug != self.slug:
+        if slug_written and previous_slug and previous_slug != self.slug:
             self._record_old_slug(previous_slug)
 
     def _db_slug(self):
