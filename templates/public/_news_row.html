@@ -1,0 +1,12 @@
+{# Ligne d'actu pleine largeur : date · (catégorie + titre) · flèche. Hover : fond + décalage. #}
+<a href="{{ news.get_absolute_url }}"
+   class="grid grid-cols-[140px_1fr_auto] max-[600px]:grid-cols-1 gap-6 max-[600px]:gap-1.5 items-center max-[600px]:items-start min-h-16 py-[22px] px-1.5 border-b-2 border-ink transition-[background,padding] duration-150 hover:bg-paper-2 hover:pl-[18px]">
+  <div class="font-mono text-[.72rem] uppercase tracking-[.06em] text-muted">{{ news.published_at|date:"d F Y" }}</div>
+  <div>
+    {% if news.category %}
+    <div class="font-mono text-[.64rem] uppercase tracking-[.1em] text-red font-bold">{{ news.category }}</div>
+    {% endif %}
+    <h3 class="font-display font-semibold text-[clamp(1.15rem,2.6vw,1.34rem)] leading-[1.12]">{{ news.title }}</h3>
+  </div>
+  <div class="text-[1.4rem] text-red max-[600px]:hidden" aria-hidden="true">→</div>
+</a>

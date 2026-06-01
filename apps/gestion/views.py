@@ -4,7 +4,6 @@ from django.db.models import Max, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.views import View
 from django.views.generic import (
     CreateView,
@@ -216,11 +215,11 @@ class EventListView(ValidatedRequiredMixin, ListView):
 
     def get_queryset(self):
         # Filtres de confort : à venir / passés / brouillons (tout par défaut).
+        # upcoming()/past() = scope métier partagé avec l'agenda public (aligné sur is_past).
         events = Event.objects.all()
-        now = timezone.now()
         return {
-            "upcoming": events.filter(starts_at__gte=now),
-            "past": events.filter(starts_at__lt=now),
+            "upcoming": events.upcoming(),
+            "past": events.past(),
             "drafts": events.filter(status=DRAFT),
         }.get(self.request.GET.get("filter"), events)
 

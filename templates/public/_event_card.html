@@ -1,0 +1,27 @@
+{% load pages %}
+{# Carte event (agenda / archives). Charte « affiche » : bordure nette, hover décollage + ombre rouge. #}
+<a href="{{ event.get_absolute_url }}"
+   class="flex flex-col border-2 border-ink bg-paper transition-[transform,box-shadow] duration-150 hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-[7px_7px_0_var(--red)]">
+  <div class="relative aspect-[4/3] border-b-2 border-ink overflow-hidden bg-[radial-gradient(120%_120%_at_100%_0%,#34302a,#15120E)]">
+    {# Placeholder en fond : visible s'il n'y a pas de cover OU si la vignette ne se génère pas. #}
+    <div class="absolute inset-0 flex items-center justify-center opacity-50">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--paper)" stroke-width="1.5" class="w-16 h-16" aria-hidden="true">
+        <path d="M4 19V5l8 4 8-4v14"/>
+      </svg>
+    </div>
+    {% include "_thumb_srcset.html" with image=event.cover sizes="(min-width: 1024px) 380px, (min-width: 640px) 45vw, 92vw" img_class="absolute inset-0 w-full h-full object-cover" %}
+    {% if event.kind %}
+    <span class="absolute top-3 left-3 bg-paper text-ink font-mono text-[.62rem] uppercase tracking-[.1em] font-bold px-[9px] py-1 border-2 border-ink">{{ event.kind }}</span>
+    {% endif %}
+  </div>
+  <div class="p-[18px] pb-[22px]">
+    <div class="font-mono text-[.68rem] uppercase tracking-[.1em] text-red font-bold">{{ event.starts_at|date:"d F Y" }}</div>
+    <h3 class="font-display font-semibold text-[clamp(1.25rem,2.6vw,1.42rem)] leading-[1.08] mt-[7px] mb-2">{{ event.title }}</h3>
+    {% if event.description %}
+    <p class="text-[.92rem] text-muted">{{ event.description|plain_excerpt|truncatewords:18 }}</p>
+    {% endif %}
+    {% if event.location %}
+    <div class="mt-3 font-mono text-[.66rem] uppercase tracking-[.08em] text-ink-soft">◉ {{ event.location }}</div>
+    {% endif %}
+  </div>
+</a>

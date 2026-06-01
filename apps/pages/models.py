@@ -31,7 +31,8 @@ class HomeContent(UUIDModel):
     def save(self, *args, **kwargs):
         # Singleton : jamais de 2e ligne. La pk est posée par UUIDModel dès l'instanciation,
         # on détecte donc un objet neuf via `_state.adding`. S'il existe déjà une ligne, on
-        # réutilise sa pk → UPDATE de l'unique ligne (on neutralise le force_insert d'objects.create).
+        # réutilise sa pk → UPDATE de l'unique ligne (on neutralise le force_insert
+        # d'objects.create).
         if self._state.adding:
             existing = type(self).objects.first()
             if existing is not None:

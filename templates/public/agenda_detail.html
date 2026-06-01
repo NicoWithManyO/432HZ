@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load thumbnail pages %}
+
+{% block title %}{{ event.title }} · Agenda · 432 Hz{% endblock %}
+{% block meta_description %}{{ event.description|plain_excerpt|truncatewords:30 }}{% endblock %}
+
+{% block content %}
+<article class="py-[var(--section-y)]">
+  <div class="wrap max-w-[880px]">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ event.kind|default:"Événement" }}</p>
+    <h1 class="font-display font-black text-[clamp(2rem,6vw,3.6rem)] leading-[1.02] tracking-[-.01em] mt-3">{{ event.title }}</h1>
+
+    {# Pastilles méta : on n'affiche que les champs renseignés. #}
+    <div class="flex flex-wrap gap-[10px] mt-6">
+      <span class="font-mono text-[.7rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[10px] py-1.5">◷ {{ event.starts_at|date:"d F Y · H\hi" }}{% if event.ends_at %} → {{ event.ends_at|date:"H\hi" }}{% endif %}</span>
+      {% if event.location %}
+      <span class="font-mono text-[.7rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[10px] py-1.5">◉ {{ event.location }}</span>
+      {% endif %}
+      {% if event.price %}
+      <span class="font-mono text-[.7rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[10px] py-1.5">◎ {{ event.price }}</span>
+      {% endif %}
+    </div>
+
+    {% if event.cover %}
+    {% thumbnail event.cover.file "1040x585" crop="smart" as cover %}
+    {% if cover %}
+    <img src="{{ cover.url }}" width="{{ cover.width }}" height="{{ cover.height }}"
+         alt="{{ event.cover.alt }}"
+         class="w-full mt-8 border-2 border-ink object-cover">
+    {% endif %}
+    {% endif %}
+
+    {% if event.description %}
+    <div class="prose mt-10">{{ event.description|safe }}</div>
+    {% endif %}
+
+    {% include "public/_gallery.html" with gallery_items=event.gallery_items.all %}
+
+    {# CTA Adhérer — lien direct tant que la page /adherer/ n'existe pas (sous-phase suivante). #}
+    <div class="mt-12 pt-10 border-t-2 border-ink">
+      <a href="/adherer/" class="btn btn--red">Adhérer à l'asso</a>
+    </div>
+  </div>
+</article>
+{% endblock %}

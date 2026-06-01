@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 from apps.common.models import (
     PublishableModel,
@@ -41,6 +42,9 @@ class News(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse("news-detail", kwargs={"slug": self.slug})
 
 
 class NewsImage(models.Model):

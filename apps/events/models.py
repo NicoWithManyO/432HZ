@@ -1,13 +1,31 @@
 from django.db import models
+from django.db.models.functions import Coalesce
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.common.models import (
     PublishableModel,
+    PublishableQuerySet,
     SluggedModel,
     TimeStampedModel,
     UUIDModel,
 )
 from apps.common.sanitize import clean_html
+
+
+class EventQuerySet(PublishableQuerySet):
+    """Ajoute les tranches temporelles à venir / passés, alignées sur `is_past`."""
+
+    def _with_reference(self):
+        # Référence temporelle = fin si renseignée, sinon début (même règle que is_past).
+        return self.annotate(_reference=Coalesce("ends_at", "starts_at"))
+
+    def upcoming(self):
+        # Un event reste « à venir » tant que sa fin (ou son début) n'est pas passée.
+        return self._with_reference().filter(_reference__gte=timezone.now())
+
+    def past(self):
+        return self._with_reference().filter(_reference__lt=timezone.now())
 
 
 class Event(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
@@ -32,6 +50,8 @@ class Event(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
         blank=True,
     )
 
+    objects = EventQuerySet.as_manager()
+
     class Meta:
         ordering = ["-starts_at"]
 
@@ -43,6 +63,9 @@ class Event(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse("event-detail", kwargs={"slug": self.slug})
 
     @property
     def is_past(self):

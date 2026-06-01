@@ -1,5 +1,4 @@
 {% extends "gestion/base_gestion.html" %}
-{% load thumbnail %}
 
 {% block title %}Médiathèque · Gestion 432 Hz{% endblock %}
 
@@ -17,14 +16,7 @@
   {% for image in images %}
   <li class="border-2 border-ink bg-paper-2">
     <a href="{% url 'gestion:media-update' image.pk %}" class="block">
-      {% thumbnail image.file "card" as card %}
-      {% thumbnail image.file "card2x" as card2x %}
-      <img src="{{ card.url }}"
-           srcset="{{ card.url }} 320w, {{ card2x.url }} 640w"
-           sizes="(min-width: 1024px) 280px, (min-width: 640px) 30vw, 45vw"
-           width="{{ card.width }}" height="{{ card.height }}"
-           alt="{{ image.alt }}" loading="lazy"
-           class="w-full aspect-[4/3] object-cover border-b-2 border-ink">
+      {% include "_thumb_srcset.html" with image=image sizes="(min-width: 1024px) 280px, (min-width: 640px) 30vw, 45vw" img_class="w-full aspect-[4/3] object-cover border-b-2 border-ink" %}
     </a>
     <div class="p-2">
       <div class="font-mono text-[.66rem] uppercase tracking-[.08em] text-muted truncate">
@@ -38,17 +30,7 @@
   {% endfor %}
 </ul>
 
-{% if is_paginated %}
-<nav class="flex items-center gap-4 mt-8 font-mono text-[.72rem] uppercase tracking-[.1em]" aria-label="Pagination">
-  {% if page_obj.has_previous %}
-  <a class="nav-link" href="?page={{ page_obj.previous_page_number }}">← Précédent</a>
-  {% endif %}
-  <span class="text-muted">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-  {% if page_obj.has_next %}
-  <a class="nav-link" href="?page={{ page_obj.next_page_number }}">Suivant →</a>
-  {% endif %}
-</nav>
-{% endif %}
+{% include "_pagination.html" with margin="mt-8" %}
 
 {% else %}
 <p class="text-ink-soft">Aucun média pour l'instant. <a href="{% url 'gestion:media-upload' %}" class="underline decoration-red decoration-2">Ajoute une première image.</a></p>

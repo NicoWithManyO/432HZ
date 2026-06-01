@@ -1,6 +1,12 @@
+from datetime import timedelta
+
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
+from apps.common.models import PUBLISHED
+from apps.events.models import Event
+from apps.news.models import News
 from apps.pages.models import HomeContent, TickerItem
 from apps.pages.punchline import render_punchline
 
@@ -69,3 +75,94 @@ def test_ticker_bar_hidden_when_empty(client):
     TickerItem.objects.all().delete()
     html = client.get(reverse("home")).content.decode()
     assert "data-ticker" not in html
+
+
+# --- Agenda & actus publics (P3.1) : le public ne voit QUE le publié ---
+
+
+@pytest.mark.django_db
+def test_agenda_list_shows_published_upcoming_hides_draft(client):
+    soon = timezone.now() + timedelta(days=10)
+    Event.objects.create(title="Concert public", starts_at=soon, status=PUBLISHED)
+    Event.objects.create(title="Concert brouillon", starts_at=soon)  # draft par défaut
+    html = client.get(reverse("agenda")).content.decode()
+    assert "Concert public" in html
+    assert "Concert brouillon" not in html
+
+
+@pytest.mark.django_db
+def test_agenda_list_when_filter_separates_upcoming_and_past(client):
+    past = timezone.now() - timedelta(days=10)
+    future = timezone.now() + timedelta(days=10)
+    Event.objects.create(title="Event passé", starts_at=past, status=PUBLISHED)
+    Event.objects.create(title="Event futur", starts_at=future, status=PUBLISHED)
+
+    # Défaut : à venir.
+    default_html = client.get(reverse("agenda")).content.decode()
+    assert "Event futur" in default_html
+    assert "Event passé" not in default_html
+
+    # ?when=past : passés uniquement.
+    past_html = client.get(reverse("agenda"), {"when": "past"}).content.decode()
+    assert "Event passé" in past_html
+    assert "Event futur" not in past_html
+
+
+@pytest.mark.django_db
+def test_agenda_in_progress_event_counts_as_upcoming(client):
+    now = timezone.now()
+    # Event en cours (commencé hier, finit demain) : « à venir » au sens is_past (ends_at).
+    Event.objects.create(
+        title="Festival en cours",
+        starts_at=now - timedelta(days=1),
+        ends_at=now + timedelta(days=1),
+        status=PUBLISHED,
+    )
+    assert "Festival en cours" in client.get(reverse("agenda")).content.decode()
+    past = client.get(reverse("agenda"), {"when": "past"}).content.decode()
+    assert "Festival en cours" not in past
+
+
+@pytest.mark.django_db
+def test_event_detail_published_ok_draft_and_unknown_404(client):
+    published = Event.objects.create(
+        title="Soirée live", starts_at=timezone.now(), status=PUBLISHED
+    )
+    draft = Event.objects.create(title="Soirée secrète", starts_at=timezone.now())
+
+    assert client.get(reverse("event-detail", args=[published.slug])).status_code == 200
+    assert client.get(reverse("event-detail", args=[draft.slug])).status_code == 404
+    assert client.get(reverse("event-detail", args=["slug-inexistant"])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_actus_list_shows_published_hides_draft(client):
+    News.objects.create(title="Actu publiée", status=PUBLISHED)
+    News.objects.create(title="Actu brouillon")
+    html = client.get(reverse("actus")).content.decode()
+    assert "Actu publiée" in html
+    assert "Actu brouillon" not in html
+
+
+@pytest.mark.django_db
+def test_news_detail_published_ok_draft_404(client):
+    published = News.objects.create(title="Communiqué", status=PUBLISHED)
+    draft = News.objects.create(title="Note interne")
+    assert client.get(reverse("news-detail", args=[published.slug])).status_code == 200
+    assert client.get(reverse("news-detail", args=[draft.slug])).status_code == 404
+
+
+def test_plain_excerpt_strips_tags_and_decodes_entities():
+    from apps.pages.templatetags.pages import plain_excerpt
+
+    # Balises retirées + entités décodées (sinon « &amp; » double-échappé à l'affichage).
+    out = plain_excerpt("<p>Théâtre de rue &amp; déambulation</p>")
+    assert out == "Théâtre de rue & déambulation"
+
+
+@pytest.mark.django_db
+def test_get_absolute_url(client):
+    event = Event.objects.create(title="Bal", starts_at=timezone.now(), status=PUBLISHED)
+    news = News.objects.create(title="Brève", status=PUBLISHED)
+    assert event.get_absolute_url() == reverse("event-detail", args=[event.slug])
+    assert news.get_absolute_url() == reverse("news-detail", args=[news.slug])

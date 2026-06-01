@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda · 432 Hz{% endblock %}
+{% block meta_description %}L'agenda de 432 Hz : concerts, performances et fêtes de quartier à Annecy.{% endblock %}
+
+{% block content %}
+<section class="py-[var(--section-y)] border-b-2 border-ink">
+  <div class="wrap">
+    <div class="flex items-end justify-between gap-4 flex-wrap mb-[clamp(24px,4vw,34px)]">
+      <div>
+        <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Tous les rendez-vous</p>
+        <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">Agenda</h1>
+      </div>
+      {# Bascule à venir / passés. #}
+      <div class="flex gap-5 font-mono text-[.74rem] uppercase tracking-[.12em]">
+        <a href="{% url 'agenda' %}" class="pb-[3px] border-b-2 {% if current_when == 'upcoming' %}border-red text-ink{% else %}border-transparent text-muted hover:text-ink{% endif %}" {% if current_when == 'upcoming' %}aria-current="page"{% endif %}>À venir</a>
+        <a href="{% url 'agenda' %}?when=past" class="pb-[3px] border-b-2 {% if current_when == 'past' %}border-red text-ink{% else %}border-transparent text-muted hover:text-ink{% endif %}" {% if current_when == 'past' %}aria-current="page"{% endif %}>Passés</a>
+      </div>
+    </div>
+
+    {% if events %}
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,265px),1fr))] gap-[clamp(16px,2.4vw,22px)]">
+      {% for event in events %}
+      {% include "public/_event_card.html" %}
+      {% endfor %}
+    </div>
+
+    {% include "_pagination.html" %}
+
+    {% else %}
+    <p class="text-ink-soft">{% if current_when == 'past' %}Aucun événement passé à afficher.{% else %}Rien à l'agenda pour l'instant. Reviens vite !{% endif %}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

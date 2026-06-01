@@ -1,0 +1,17 @@
+{% load thumbnail %}
+{# Image responsive WebP (vignettes easy-thumbnails `card`/`card2x` + srcset). Source de vérité
+   unique des deux tailles. Si la vignette ne peut PAS être générée (fichier disque manquant,
+   THUMBNAIL_DEBUG off → `card` vide), on ne rend RIEN : le conteneur appelant montre alors son
+   placeholder au lieu d'une image cassée. Params : image, sizes, img_class. #}
+{% if image %}
+{% thumbnail image.file "card" as card %}
+{% thumbnail image.file "card2x" as card2x %}
+{% if card %}
+<img src="{{ card.url }}"
+     srcset="{{ card.url }} 320w, {{ card2x.url }} 640w"
+     sizes="{{ sizes }}"
+     width="{{ card.width }}" height="{{ card.height }}"
+     alt="{{ image.alt }}" loading="lazy"
+     class="{{ img_class }}">
+{% endif %}
+{% endif %}

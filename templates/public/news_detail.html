@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load thumbnail pages %}
+
+{% block title %}{{ news.title }} · Actus · 432 Hz{% endblock %}
+{% block meta_description %}{{ news.description|plain_excerpt|truncatewords:30 }}{% endblock %}
+
+{% block content %}
+<article class="py-[var(--section-y)]">
+  <div class="wrap max-w-[880px]">
+    <div class="flex items-center gap-3 flex-wrap">
+      {% if news.category %}
+      <span class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ news.category }}</span>
+      {% endif %}
+      <span class="font-mono uppercase tracking-[.08em] text-[.72rem] text-muted">{{ news.published_at|date:"d F Y" }}</span>
+    </div>
+    <h1 class="font-display font-black text-[clamp(2rem,6vw,3.6rem)] leading-[1.02] tracking-[-.01em] mt-3">{{ news.title }}</h1>
+
+    {% if news.cover %}
+    {% thumbnail news.cover.file "1040x585" crop="smart" as cover %}
+    {% if cover %}
+    <img src="{{ cover.url }}" width="{{ cover.width }}" height="{{ cover.height }}"
+         alt="{{ news.cover.alt }}"
+         class="w-full mt-8 border-2 border-ink object-cover">
+    {% endif %}
+    {% endif %}
+
+    {% if news.description %}
+    <div class="prose mt-10">{{ news.description|safe }}</div>
+    {% endif %}
+
+    {% include "public/_gallery.html" with gallery_items=news.gallery_items.all %}
+  </div>
+</article>
+{% endblock %}

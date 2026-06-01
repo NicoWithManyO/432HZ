@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Actus · 432 Hz{% endblock %}
+{% block meta_description %}Les actualités de 432 Hz : appels, ateliers, partenariats et vie de l'association à Annecy.{% endblock %}
+
+{% block content %}
+<section class="py-[var(--section-y)] border-b-2 border-ink">
+  <div class="wrap">
+    <div class="mb-[clamp(24px,4vw,34px)]">
+      <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Du neuf</p>
+      <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">Actus</h1>
+    </div>
+
+    {% if news_list %}
+    <div class="border-t-2 border-ink">
+      {% for news in news_list %}
+      {% include "public/_news_row.html" %}
+      {% endfor %}
+    </div>
+
+    {% include "_pagination.html" %}
+
+    {% else %}
+    <p class="text-ink-soft">Pas encore d'actu. À très vite !</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

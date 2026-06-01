@@ -1,0 +1,13 @@
+{# Galerie d'images ordonnée (reçoit `gallery_items` = QuerySet d'EventImage/NewsImage). #}
+{% if gallery_items %}
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-10">
+  {% for item in gallery_items %}
+  <figure class="border-2 border-ink bg-paper-2">
+    {% include "_thumb_srcset.html" with image=item.image sizes="(min-width: 640px) 30vw, 45vw" img_class="w-full aspect-[4/3] object-cover" %}
+    {% if item.image.caption %}
+    <figcaption class="p-2 border-t-2 border-ink font-mono text-[.66rem] uppercase tracking-[.08em] text-muted">{{ item.image.caption }}</figcaption>
+    {% endif %}
+  </figure>
+  {% endfor %}
+</div>
+{% endif %}
