@@ -31,9 +31,9 @@
       <nav class="max-[880px]:hidden flex items-center gap-[clamp(16px,2.4vw,30px)] text-[.95rem]" aria-label="Navigation principale">
         <a class="nav-link" href="{% url 'agenda' %}">Agenda</a>
         <a class="nav-link" href="{% url 'actus' %}">Actus</a>
-        <a class="nav-link" href="/asso/">L'asso</a>
-        <a class="nav-link" href="/contact/">Contact</a>
-        <a href="/adherer/" class="inline-flex items-center min-h-[44px] bg-red text-paper border-2 border-ink shadow-hard px-[18px] font-extrabold hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--ink)] transition">Adhérer</a>
+        <a class="nav-link" href="{% url 'asso' %}">L'asso</a>
+        <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+        <a href="{% url 'adherer' %}" class="inline-flex items-center min-h-[44px] bg-red text-paper border-2 border-ink shadow-hard px-[18px] font-extrabold hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--ink)] transition">Adhérer</a>
       </nav>
 
       <button type="button" data-burger class="burger max-[880px]:flex hidden flex-col gap-[5px] p-[10px] bg-transparent border-0 cursor-pointer z-[80]" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu">
@@ -47,9 +47,9 @@
     <nav class="flex flex-col gap-1" aria-label="Navigation mobile">
       <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'agenda' %}">Agenda</a>
       <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'actus' %}">Actus</a>
-      <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="/asso/">L'asso</a>
-      <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="/contact/">Contact</a>
-      <a class="mt-7 bg-red text-paper border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="/adherer/">Adhérer</a>
+      <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'asso' %}">L'asso</a>
+      <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'contact' %}">Contact</a>
+      <a class="mt-7 bg-red text-paper border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="{% url 'adherer' %}">Adhérer</a>
     </nav>
   </div>
   {% endblock header %}
@@ -72,23 +72,23 @@
           <ul class="space-y-[9px]">
             <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{% url 'agenda' %}">Agenda</a></li>
             <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{% url 'actus' %}">Actus</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="/asso/">L'asso</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="/adherer/">Adhérer</a></li>
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{% url 'asso' %}">L'asso</a></li>
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{% url 'adherer' %}">Adhérer</a></li>
           </ul>
         </div>
         <div>
           <h4 class="font-mono uppercase tracking-[.13em] text-[.72rem] text-red mb-[14px]">Réseaux</h4>
           <ul class="space-y-[9px]">
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="/contact/">Contact</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.instagram.com/" rel="noopener">Instagram</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.facebook.com/" rel="noopener">Facebook</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://soundcloud.com/" rel="noopener">SoundCloud</a></li>
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{% url 'contact' %}">Contact</a></li>
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://soundcloud.com/" target="_blank" rel="noopener noreferrer">SoundCloud</a></li>
           </ul>
         </div>
       </div>
       <div class="mt-[42px] pt-[22px] border-t-2 border-ink flex justify-between flex-wrap gap-[10px] font-mono text-[.68rem] uppercase tracking-[.08em] text-muted">
         <span>© 432 Hz · Annecy</span>
-        <span>Mentions légales · Confidentialité</span>
+        <a class="hover:text-ink transition-colors" href="{% url 'mentions' %}">Mentions légales · Confidentialité</a>
       </div>
     </div>
   </footer>

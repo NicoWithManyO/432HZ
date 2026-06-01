@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Adhérer · 432 Hz{% endblock %}
+{% block meta_description %}Adhérez à 432 Hz et soutenez le spectacle vivant à Annecy. Adhésion en ligne via HelloAsso.{% endblock %}
+
+{% block content %}
+<section class="py-[var(--section-y)]">
+  <div class="wrap max-w-[880px]">
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Soutenir 432 Hz</p>
+    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">Adhérer</h1>
+
+    {# TODO: remplacer par le pitch d'adhésion réel (montants, contreparties…). #}
+    <div class="prose mt-8">
+      <p>En adhérant, vous rejoignez une communauté qui fait vibrer la culture à Annecy. Votre
+        cotisation finance la programmation, le matériel et les actions de l'association — et vous
+        donne voix au chapitre en assemblée générale.</p>
+    </div>
+
+    {% comment %}
+      Click-to-load HelloAsso (RGPD) : aucun appel tiers avant le clic. Le JS de main.js
+      injecte l'iframe depuis data-src au clic sur [data-embed-load].
+    {% endcomment %}
+    <div data-embed
+         data-src="{# TODO: URL du formulaire d'adhésion HelloAsso (iframe) #}"
+         class="mt-10 border-2 border-ink bg-ink text-paper p-[clamp(28px,5vw,48px)] text-center">
+      <p class="font-display font-black text-[clamp(1.3rem,3vw,1.8rem)] leading-tight">Le formulaire d'adhésion se charge sur demande</p>
+      <p class="text-paper/70 text-[.92rem] mt-3 max-w-[46ch] mx-auto">Pour respecter votre vie privée, rien n'est chargé depuis HelloAsso tant que vous ne cliquez pas. En chargeant le formulaire, vous acceptez le dépôt de cookies par HelloAsso.</p>
+      <button type="button" data-embed-load class="btn btn--red mt-7">Charger le formulaire</button>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -77,3 +77,24 @@ class NewsDetailView(DetailView):
         )
     )
     template_name = "public/news_detail.html"
+
+
+# --- Pages fixes (P3.2) : contenu statique en template, aucune donnée dynamique ---
+
+
+class AssoView(TemplateView):
+    template_name = "public/asso.html"
+
+
+class AdhererView(TemplateView):
+    template_name = "public/adherer.html"
+
+
+class ContactView(TemplateView):
+    template_name = "public/contact.html"
+
+
+class MentionsView(TemplateView):
+    """Mentions légales + confidentialité regroupées sur une seule page."""
+
+    template_name = "public/mentions_legales.html"

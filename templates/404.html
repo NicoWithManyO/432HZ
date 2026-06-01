@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Page introuvable · 432 Hz{% endblock %}
+
+{% block content %}
+<section class="py-[var(--section-y)]">
+  <div class="wrap max-w-[680px] text-center">
+    <p class="font-mono uppercase tracking-[.18em] text-[.8rem] text-red font-bold">Erreur 404</p>
+    <h1 class="font-display font-black text-[clamp(3rem,12vw,7rem)] leading-none mt-3">Hors fréquence</h1>
+    <p class="text-ink-soft text-[1.05rem] mt-6 max-w-[42ch] mx-auto">Cette page n'existe pas (ou plus). Le lien a peut-être changé.</p>
+    <div class="flex gap-3 justify-center flex-wrap mt-9">
+      <a href="{% url 'home' %}" class="btn btn--red">Retour à l'accueil</a>
+      <a href="{% url 'agenda' %}" class="btn">Voir l'agenda</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -36,9 +36,8 @@
 
     {% include "public/_gallery.html" with gallery_items=event.gallery_items.all %}
 
-    {# CTA Adhérer — lien direct tant que la page /adherer/ n'existe pas (sous-phase suivante). #}
     <div class="mt-12 pt-10 border-t-2 border-ink">
-      <a href="/adherer/" class="btn btn--red">Adhérer à l'asso</a>
+      <a href="{% url 'adherer' %}" class="btn btn--red">Adhérer à l'asso</a>
     </div>
   </div>
 </article>

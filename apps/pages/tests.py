@@ -166,3 +166,30 @@ def test_get_absolute_url(client):
     news = News.objects.create(title="Brève", status=PUBLISHED)
     assert event.get_absolute_url() == reverse("event-detail", args=[event.slug])
     assert news.get_absolute_url() == reverse("news-detail", args=[news.slug])
+
+
+# --- Pages fixes (P3.2) : câblage routes + gabarit 404 ---
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("route", "marker"),
+    [
+        ("asso", "432 Hz"),
+        ("adherer", "Adhérer"),
+        ("contact", "Contact"),
+        ("mentions", "Mentions légales"),
+    ],
+)
+def test_fixed_pages_return_200_with_heading(client, route, marker):
+    response = client.get(reverse(route))
+    assert response.status_code == 200
+    assert marker in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_unknown_url_renders_404_template(client):
+    # Django sert templates/404.html dès que DEBUG=False (forcé en test).
+    response = client.get("/cette-page-nexiste-pas/")
+    assert response.status_code == 404
+    assert "Hors fréquence" in response.content.decode()

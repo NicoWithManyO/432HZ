@@ -59,6 +59,24 @@ if (ticker) {
   }
 }
 
+// --- Click-to-load des embeds tiers (RGPD) ---
+// Aucun appel au service tiers tant que l'utilisateur n'a pas cliqué : au clic, on injecte
+// l'iframe depuis `data-src` et on retire le placeholder. Utilisé par le formulaire HelloAsso.
+const embed = document.querySelector("[data-embed]");
+const embedLoad = embed && embed.querySelector("[data-embed-load]");
+if (embed && embedLoad) {
+  embedLoad.addEventListener("click", () => {
+    const src = embed.dataset.src;
+    if (!src) return; // pas d'URL configurée → on ne touche à rien
+    const iframe = document.createElement("iframe");
+    iframe.src = src;
+    iframe.loading = "lazy";
+    iframe.title = "Formulaire d'adhésion HelloAsso";
+    iframe.className = "w-full min-h-[640px] border-0";
+    embed.replaceChildren(iframe);
+  });
+}
+
 // --- Reveals au scroll (IntersectionObserver) ---
 const revealables = document.querySelectorAll(".rv");
 if (revealables.length && "IntersectionObserver" in window) {
