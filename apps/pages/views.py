@@ -1,9 +1,13 @@
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Prefetch
+from django.http import Http404
+from django.shortcuts import redirect
 from django.utils.text import Truncator
 from django.views.generic import DetailView, ListView, TemplateView
 from easy_thumbnails.exceptions import InvalidImageFormatError
 from easy_thumbnails.files import get_thumbnailer
 
+from apps.common.models import SlugHistory
 from apps.events.models import Event, EventImage
 from apps.news.models import News, NewsImage
 from apps.pages.models import HomeContent
@@ -57,6 +61,34 @@ class AgendaListView(ListView):
         return context
 
 
+class SlugRedirectMixin:
+    """Redirige en 301 une ancienne URL de détail vers le slug courant.
+
+    Sur 404 (slug introuvable), consulte l'historique des slugs : si l'ancien slug
+    pointe vers un objet toujours publié, on redirige définitivement vers son URL.
+    Une cible dépubliée garde le 404, cohérent avec l'URL courante.
+    """
+
+    def get(self, request, *args, **kwargs):
+        try:
+            return super().get(request, *args, **kwargs)
+        except Http404:
+            target = self._resolve_old_slug(kwargs.get(self.slug_url_kwarg))
+            if target is not None:
+                return redirect(target.get_absolute_url(), permanent=True)
+            raise
+
+    def _resolve_old_slug(self, slug):
+        model = self.get_queryset().model
+        ct = ContentType.objects.get_for_model(model)
+        entry = SlugHistory.objects.filter(content_type=ct, old_slug=slug).first()
+        if entry is None:
+            return None
+        # Requête légère (sans le select_related/prefetch de la vue, inutile pour une
+        # simple URL). Même filtre `published()` → pas de redirection vers un brouillon.
+        return model.objects.published().filter(pk=entry.object_id).first()
+
+
 class ArticleOpenGraphMixin:
     """Métadonnées Open Graph « article » communes aux détails event/actu.
 
@@ -94,7 +126,7 @@ class ArticleOpenGraphMixin:
         return self.request.build_absolute_uri(thumb.url)
 
 
-class EventDetailView(ArticleOpenGraphMixin, DetailView):
+class EventDetailView(SlugRedirectMixin, ArticleOpenGraphMixin, DetailView):
     """Détail d'un event publié (404 sur brouillon ou slug inconnu)."""
 
     # `published()` → 404 auto sur draft. select_related/prefetch : cover + galerie en
@@ -150,7 +182,7 @@ class ActusListView(ListView):
         return News.objects.published()
 
 
-class NewsDetailView(ArticleOpenGraphMixin, DetailView):
+class NewsDetailView(SlugRedirectMixin, ArticleOpenGraphMixin, DetailView):
     """Détail d'une actu publiée (404 sur brouillon ou slug inconnu)."""
 
     queryset = (

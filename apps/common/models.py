@@ -7,6 +7,8 @@ chose et coopère via `super().save()`.
 
 import uuid
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -92,7 +94,27 @@ class SluggedModel(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self._build_unique_slug()
+        # Slug en base AVANT écriture : non-nul ⇒ mise à jour (le PK UUID, lui, est
+        # déjà posé à l'instanciation et ne distingue donc pas création d'update).
+        previous_slug = self._db_slug()
         super().save(*args, **kwargs)
+        if previous_slug and previous_slug != self.slug:
+            self._record_old_slug(previous_slug)
+
+    def _db_slug(self):
+        """Slug actuellement persisté pour cet objet, ou None s'il n'existe pas encore."""
+        return type(self).objects.filter(pk=self.pk).values_list("slug", flat=True).first()
+
+    def _record_old_slug(self, old_slug):
+        """Historise un slug abandonné pour permettre une redirection 301 ultérieure."""
+        ct = ContentType.objects.get_for_model(type(self))
+        # L'ancien slug pointe désormais vers cet objet (écrase un mapping périmé).
+        SlugHistory.objects.update_or_create(
+            content_type=ct, old_slug=old_slug, defaults={"object_id": self.pk}
+        )
+        # Si le nouveau slug était lui-même historisé, il redevient « vivant » :
+        # on retire l'entrée pour éviter une redirection en boucle.
+        SlugHistory.objects.filter(content_type=ct, old_slug=self.slug).delete()
 
     def _build_unique_slug(self):
         base = slugify(getattr(self, self.SLUG_SOURCE))[:200] or "item"
@@ -104,3 +126,30 @@ class SluggedModel(models.Model):
             slug = f"{base[:200 - len(suffix)]}{suffix}"
             counter += 1
         return slug
+
+
+class SlugHistory(models.Model):
+    """Anciens slugs des contenus sluggés → redirection 301 après renommage.
+
+    Relation générique (ContentType) : un seul mécanisme pour tous les modèles
+    sluggés (events, actus, …) plutôt qu'une table d'historique par modèle.
+    """
+
+    old_slug = models.SlugField(max_length=200)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.UUIDField()
+    content_object = GenericForeignKey("content_type", "object_id")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Un slug ne peut désigner qu'un seul objet par type de contenu (mais peut
+        # coexister entre un event et une actu). La contrainte sert aussi d'index de
+        # lookup pour la redirection.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content_type", "old_slug"], name="uniq_slug_history_ct_old_slug"
+            )
+        ]
+
+    def __str__(self):
+        return self.old_slug

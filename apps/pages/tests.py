@@ -6,7 +6,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.common.models import PUBLISHED
+from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
 from apps.news.models import News
 from apps.pages.models import HomeContent, TickerItem
@@ -187,6 +187,60 @@ def test_get_absolute_url(client):
     news = News.objects.create(title="Brève", status=PUBLISHED)
     assert event.get_absolute_url() == reverse("event-detail", args=[event.slug])
     assert news.get_absolute_url() == reverse("news-detail", args=[news.slug])
+
+
+# --- Redirection 301 sur changement de slug (P4.2) ---
+
+
+@pytest.mark.django_db
+def test_old_event_slug_redirects_permanently(client):
+    event = Event.objects.create(title="Concert", starts_at=timezone.now(), status=PUBLISHED)
+    old_slug = event.slug
+    event.slug = "concert-renomme"
+    event.save()
+
+    response = client.get(reverse("event-detail", args=[old_slug]))
+    assert response.status_code == 301
+    assert response["Location"] == event.get_absolute_url()
+
+
+@pytest.mark.django_db
+def test_old_news_slug_redirects_permanently(client):
+    news = News.objects.create(title="Communiqué", status=PUBLISHED)
+    old_slug = news.slug
+    news.slug = "communique-corrige"
+    news.save()
+
+    response = client.get(reverse("news-detail", args=[old_slug]))
+    assert response.status_code == 301
+    assert response["Location"] == news.get_absolute_url()
+
+
+@pytest.mark.django_db
+def test_unknown_slug_still_404(client):
+    # Un slug jamais utilisé n'a pas d'historique → 404, pas de redirection.
+    assert client.get(reverse("event-detail", args=["jamais-vu"])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_old_slug_of_unpublished_target_404(client):
+    # Cible repassée en brouillon : l'ancien slug ne redirige pas (cohérent avec l'URL courante).
+    event = Event.objects.create(title="Concert", starts_at=timezone.now(), status=PUBLISHED)
+    old_slug = event.slug
+    event.slug = "concert-renomme"
+    event.status = DRAFT
+    event.save()
+    assert client.get(reverse("event-detail", args=[old_slug])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_old_slug_redirect_isolated_per_model(client):
+    # L'ancien slug d'un event ne déclenche pas de redirection sur l'URL d'actu.
+    event = Event.objects.create(title="Concert", starts_at=timezone.now(), status=PUBLISHED)
+    old_slug = event.slug
+    event.slug = "concert-renomme"
+    event.save()
+    assert client.get(reverse("news-detail", args=[old_slug])).status_code == 404
 
 
 # --- Pages fixes (P3.2) : câblage routes + gabarit 404 ---
