@@ -314,6 +314,30 @@ html.js .rv.pending {
     font-family: var(--grotesk);
     font-size: 1rem;
   }
+  /* Cases à cocher (ex. réseaux : « afficher sur la page » / « dans le footer »). Le form
+     de liste est en colonne (`flex-col`) → on le bascule en ligne+wrap UNIQUEMENT pour les
+     forms portant des cases : label/url/bouton gardent toute la largeur (flex-basis 100%),
+     les cases prennent leur largeur naturelle → côte à côte sur la même ligne. */
+  .gestion-form:has(input[type="checkbox"]) {
+    flex-flow: row wrap;
+  }
+  .gestion-form:has(input[type="checkbox"]) > * {
+    flex: 1 0 100%;
+  }
+  .gestion-form:has(input[type="checkbox"]) > p:has(input[type="checkbox"]) {
+    flex: 0 1 auto;
+    margin-right: clamp(16px, 3vw, 32px);
+  }
+  /* Dans chaque case : label ET checkbox sur la même ligne. */
+  .gestion-form p:has(input[type="checkbox"]) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .gestion-form p:has(input[type="checkbox"]) label {
+    display: inline;
+    margin: 0;
+  }
   .gestion-form .helptext {
     display: block;
     margin: 4px 0 0;
