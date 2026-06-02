@@ -27,6 +27,7 @@ from apps.gestion.forms import (
     HomeDisplayForm,
     InvitationForm,
     KeyFigureForm,
+    MentionsContentForm,
     MissionForm,
     NewsForm,
     SocialLinkForm,
@@ -41,6 +42,7 @@ from apps.pages.models import (
     ContactContent,
     HomeContent,
     KeyFigure,
+    MentionsContent,
     Mission,
     SocialLink,
     TickerItem,
@@ -78,6 +80,8 @@ class DashboardView(ValidatedRequiredMixin, TemplateView):
         context["social_links_list"] = self._ordered_list_ctx(
             "social-link", SocialLink.objects.all()
         )
+        # Onglet Mentions légales
+        context["mentions_form"] = MentionsContentForm(instance=MentionsContent.load())
         return context
 
     @staticmethod
@@ -207,6 +211,18 @@ class ContactContentUpdateView(ValidatedRequiredMixin, View):
             # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
             messages.error(request, "Textes non enregistrés :\n" + form.errors.as_text())
         return redirect(_dashboard_tab_url("contact"))
+
+
+class MentionsContentUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        form = MentionsContentForm(request.POST, instance=MentionsContent.load())
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Textes de la page Mentions légales enregistrés.")
+        else:
+            # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
+            messages.error(request, "Textes non enregistrés :\n" + form.errors.as_text())
+        return redirect(_dashboard_tab_url("mentions"))
 
 
 # --- CRUD générique de listes ordonnées (missions, chiffres-clés, …) ---

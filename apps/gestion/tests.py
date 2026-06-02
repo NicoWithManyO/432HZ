@@ -22,6 +22,7 @@ from apps.pages.models import (
     ContactContent,
     HomeContent,
     KeyFigure,
+    MentionsContent,
     Mission,
     SocialLink,
     TickerItem,
@@ -571,8 +572,8 @@ def test_dashboard_renders_tabs_and_accordions(validated_client):
         assert f'id="panel-{slug}"' in html
     # Accordéons repliables : 4 sur l'accueil (Hero + Bandeau + Boutons + Affichage) + 4 sur
     # L'asso (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes &
-    # coordonnées + Réseaux).
-    assert html.count('class="gestion-accordion"') == 10
+    # coordonnées + Réseaux) + 1 sur Mentions légales (Textes).
+    assert html.count('class="gestion-accordion"') == 11
     assert reverse("gestion:home-display-update") in html
 
 
@@ -710,6 +711,63 @@ def test_social_link_create_appends_at_end(validated_client):
     )
     created = SocialLink.objects.get(label="Bandcamp")
     assert created.order == 1
+
+
+# --- Contenu page Mentions légales : singleton + sanitize + édition ---
+
+
+@pytest.mark.django_db
+def test_mentions_content_is_singleton():
+    # Le seed pose déjà l'unique ligne ; toute sauvegarde « neuve » la met à jour.
+    assert MentionsContent.objects.count() == 1
+    MentionsContent(
+        kicker="K", title="T", editor_html="<p>e</p>", hosting_html="<p>h</p>",
+        intellectual_property_html="<p>i</p>", privacy_html="<p>p</p>",
+    ).save()
+    assert MentionsContent.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_mentions_content_sanitizes_sections_on_save():
+    mentions = MentionsContent.load()
+    mentions.privacy_html = "<p>ok</p><script>alert(1)</script>"
+    mentions.save()
+    mentions.refresh_from_db()
+    assert "<script>" not in mentions.privacy_html
+    assert "alert(1)" not in mentions.privacy_html
+    assert "<p>ok</p>" in mentions.privacy_html
+
+
+@pytest.mark.django_db
+def test_mentions_content_update(validated_client):
+    response = validated_client.post(
+        reverse("gestion:mentions-content-update"),
+        {
+            "kicker": "Légal",
+            "title": "Mentions légales",
+            "editor_html": "<p>Nouvel éditeur.</p>",
+            "hosting_html": "<p>Nouvel hébergeur.</p>",
+            "intellectual_property_html": "<p>PI.</p>",
+            "privacy_html": "<p>Vie privée.</p>",
+        },
+        follow=True,
+    )
+    mentions = MentionsContent.load()
+    assert mentions.kicker == "Légal"
+    assert "Nouvel éditeur." in mentions.editor_html
+    assert "page Mentions légales" in response.content.decode()
+    assert "enregistrés" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_mentions_content_update_invalid_surfaces_error(validated_client):
+    response = validated_client.post(
+        reverse("gestion:mentions-content-update"),
+        {"kicker": "", "title": "", "editor_html": "", "hosting_html": "",
+         "intellectual_property_html": "", "privacy_html": ""},
+        follow=True,
+    )
+    assert "non enregistrés" in response.content.decode()
 
 
 # --- CRUD générique de listes ordonnées (missions, chiffres-clés) ---

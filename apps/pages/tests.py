@@ -468,3 +468,22 @@ def test_contact_social_links_are_free(client):
     response = client.get(reverse("contact"))
     assert response.status_code == 200
     assert list(response.context["social_links"]) == []
+
+
+@pytest.mark.django_db
+def test_mentions_page_renders_seeded_content(client):
+    # Après bascule template→base : le rendu reprend les textes d'origine + les titres
+    # de section figés au template.
+    response = client.get(reverse("mentions"))
+    html = response.content.decode()
+    assert "Informations légales" in html  # kicker
+    # Titres de section (figés au template, pas en base).
+    for section in (
+        "Éditeur du site", "Hébergement", "Propriété intellectuelle", "Confidentialité",
+    ):
+        assert section in html
+    # Contenu éditable seedé verbatim.
+    assert "association loi 1901" in html
+    assert 'href="mailto:contact@432hz.fr"' in html
+    assert "<strong>Plausible</strong>" in html
+    assert "click-to-load" in html

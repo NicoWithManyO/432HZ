@@ -180,10 +180,21 @@
 </div>
 
 <div id="panel-mentions" role="tabpanel" aria-labelledby="tab-mentions" tabindex="0">
-  <div class="border-2 border-dashed border-line p-[clamp(20px,4vw,40px)] text-center">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted mb-2">À venir</p>
-    <p class="text-ink-soft">L'édition du contenu de la page « Mentions légales » sera disponible prochainement.</p>
-  </div>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Textes</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Le contenu de chaque section légale (les titres de section restent fixes).</p>
+      <form method="post" action="{% url 'gestion:mentions-content-update' %}" class="gestion-form flex flex-col gap-4">
+        {% csrf_token %}
+        {{ mentions_form.as_p }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+      </form>
+    </div>
+  </details>
+
 </div>
 {% endblock %}
 

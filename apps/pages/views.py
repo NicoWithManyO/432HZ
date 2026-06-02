@@ -16,6 +16,7 @@ from apps.pages.models import (
     ContactContent,
     HomeContent,
     KeyFigure,
+    MentionsContent,
     Mission,
     SocialLink,
 )
@@ -246,6 +247,12 @@ class ContactView(TemplateView):
 
 
 class MentionsView(TemplateView):
-    """Mentions légales + confidentialité regroupées sur une seule page."""
+    """Mentions légales + confidentialité regroupées sur une seule page (contenu éditable
+    en gestion ; les titres de section restent figés au template)."""
 
     template_name = "public/mentions_legales.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["mentions"] = MentionsContent.load()
+        return context

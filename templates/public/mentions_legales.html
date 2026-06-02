@@ -1,37 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Mentions légales & confidentialité · 432 Hz{% endblock %}
+{% block title %}Mentions légales &amp; confidentialité · 432 Hz{% endblock %}
 {% block meta_description %}Mentions légales et politique de confidentialité du site de l'association 432 Hz.{% endblock %}
 
 {% block content %}
 <section class="py-[var(--section-y)]">
   <div class="wrap max-w-[760px]">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Informations légales</p>
-    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">Mentions légales & confidentialité</h1>
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ mentions.kicker }}</p>
+    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">{{ mentions.title }}</h1>
 
-    {# TODO: compléter avec les informations légales réelles de l'association. #}
+    {# Titres de section figés ici (structure) ; le contenu de chaque section est éditable. #}
     <div class="prose mt-10">
       <h2>Éditeur du site</h2>
-      <p>Association 432 Hz{# TODO: raison sociale exacte #} — association loi 1901.<br>
-        Adresse : {# TODO: adresse du siège #}Annecy, Haute-Savoie.<br>
-        SIRET : {# TODO: numéro SIRET #}—<br>
-        Directeur·rice de la publication : {# TODO: nom #}—<br>
-        Contact : <a href="mailto:contact@432hz.fr">contact@432hz.fr</a>{# TODO: email réel #}</p>
+      {{ mentions.editor_html|safe }}
 
       <h2>Hébergement</h2>
-      <p>{# TODO: nom, adresse et contact de l'hébergeur #}—</p>
+      {{ mentions.hosting_html|safe }}
 
       <h2>Propriété intellectuelle</h2>
-      <p>Les contenus de ce site (textes, visuels, logo) sont la propriété de l'association 432 Hz,
-        sauf mention contraire. Toute reproduction sans autorisation est interdite.</p>
+      {{ mentions.intellectual_property_html|safe }}
 
       <h2>Confidentialité</h2>
-      <p>Ce site mesure son audience avec <strong>Plausible</strong>, une solution d'analyse
-        respectueuse de la vie privée : aucun cookie n'est déposé et aucune donnée personnelle n'est
-        collectée ni revendue.</p>
-      <p>Les contenus tiers (formulaire d'adhésion HelloAsso, lecteurs audio…) ne sont chargés
-        qu'après une action explicite de votre part (« click-to-load ») : aucun appel n'est fait à
-        ces services tant que vous ne le demandez pas.</p>
+      {{ mentions.privacy_html|safe }}
     </div>
   </div>
 </section>

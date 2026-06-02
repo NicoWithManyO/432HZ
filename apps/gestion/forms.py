@@ -13,6 +13,7 @@ from apps.pages.models import (
     ContactContent,
     HomeContent,
     KeyFigure,
+    MentionsContent,
     Mission,
     SocialLink,
     TickerItem,
@@ -259,3 +260,29 @@ class SocialLinkForm(forms.ModelForm):
     class Meta:
         model = SocialLink
         fields = ["label", "url"]
+
+
+class MentionsContentForm(forms.ModelForm):
+    """Édition des textes de la page Mentions légales (une section en HTML léger par
+    champ via l'éditeur riche ; les titres de section restent figés au template)."""
+
+    class Meta:
+        model = MentionsContent
+        fields = [
+            "kicker", "title", "editor_html", "hosting_html",
+            "intellectual_property_html", "privacy_html",
+        ]
+        labels = {
+            "editor_html": "Éditeur du site",
+            "hosting_html": "Hébergement",
+            "intellectual_property_html": "Propriété intellectuelle",
+            "privacy_html": "Confidentialité",
+        }
+        widgets = {
+            "editor_html": forms.Textarea(attrs={"rows": 5, "data-richtext": True}),
+            "hosting_html": forms.Textarea(attrs={"rows": 3, "data-richtext": True}),
+            "intellectual_property_html": forms.Textarea(
+                attrs={"rows": 4, "data-richtext": True}
+            ),
+            "privacy_html": forms.Textarea(attrs={"rows": 5, "data-richtext": True}),
+        }

@@ -42,6 +42,12 @@ urlpatterns = [
         views.ContactContentUpdateView.as_view(),
         name="contact-content-update",
     ),
+    # Contenu page Mentions légales (textes des sections)
+    path(
+        "mentions/textes/",
+        views.MentionsContentUpdateView.as_view(),
+        name="mentions-content-update",
+    ),
     path(
         "listes/<str:key>/ajouter/",
         views.OrderedListCreateView.as_view(),

@@ -151,3 +151,23 @@ class SocialLink(UUIDModel):
 
     def __str__(self):
         return self.label
+
+
+class MentionsContent(SingletonModel, SanitizedHTMLModel, UUIDModel):
+    """Singleton : contenu de la page « Mentions légales » (structure figée au template,
+    seul le contenu est éditable). Un champ HTML léger sanitizé par section ; les titres
+    de section restent codés au template."""
+
+    kicker = models.CharField(max_length=80)
+    title = models.CharField(max_length=120)
+    editor_html = models.TextField()  # section « Éditeur du site »
+    hosting_html = models.TextField()  # section « Hébergement »
+    intellectual_property_html = models.TextField()  # section « Propriété intellectuelle »
+    privacy_html = models.TextField()  # section « Confidentialité »
+
+    RICH_TEXT_FIELDS = (
+        "editor_html", "hosting_html", "intellectual_property_html", "privacy_html",
+    )
+
+    def __str__(self):
+        return self.title
