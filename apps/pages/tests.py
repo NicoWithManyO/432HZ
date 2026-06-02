@@ -362,6 +362,71 @@ def test_home_hero_buttons_are_free(client):
     assert "Voir l&#x27;agenda" not in response.content.decode()
 
 
+# --- Accueil : nombre d'events/actus affichés configurable (HomeContent) ---
+
+
+@pytest.mark.django_db
+def test_home_content_has_default_counts():
+    # Le seed pose la ligne ; les nouveaux champs prennent les défauts du modèle (3 / 4).
+    home = HomeContent.load()
+    assert home.events_count == 3
+    assert home.news_count == 4
+
+
+@pytest.mark.django_db
+def test_home_respects_configured_events_count(client):
+    now = timezone.now()
+    for i in range(5):
+        Event.objects.create(
+            title=f"Event {i}", starts_at=now + timedelta(days=i + 1), status=PUBLISHED
+        )
+    home = HomeContent.load()
+    home.events_count = 2
+    home.save()
+    # Vedette à part : la grille des suivants est limitée au nombre configuré.
+    context = client.get(reverse("home")).context
+    assert len(context["upcoming_events"]) == 2
+
+
+@pytest.mark.django_db
+def test_home_respects_configured_news_count(client):
+    for i in range(5):
+        News.objects.create(title=f"Actu {i}", status=PUBLISHED)
+    home = HomeContent.load()
+    home.news_count = 2
+    home.save()
+    assert len(client.get(reverse("home")).context["recent_news"]) == 2
+
+
+@pytest.mark.django_db
+def test_home_zero_events_count_keeps_featured(client):
+    now = timezone.now()
+    featured = Event.objects.create(
+        title="La une", starts_at=now + timedelta(days=1), status=PUBLISHED
+    )
+    Event.objects.create(title="Suivant", starts_at=now + timedelta(days=2), status=PUBLISHED)
+    home = HomeContent.load()
+    home.events_count = 0
+    home.save()
+    context = client.get(reverse("home")).context
+    # La vedette reste indépendante du compteur ; seule la grille des suivants disparaît.
+    assert context["featured_event"] == featured
+    assert context["upcoming_events"] == []
+
+
+@pytest.mark.django_db
+def test_home_zero_news_count_hides_actus_section(client):
+    News.objects.create(title="Actu masquée", status=PUBLISHED)
+    home = HomeContent.load()
+    home.news_count = 0
+    home.save()
+    html = client.get(reverse("home")).content.decode()
+    # Compteur à 0 ⇒ toute la section Actus disparaît (ni titre, ni état vide).
+    assert 'id="actus"' not in html
+    assert "Actu masquée" not in html
+    assert "Aucune actu pour le moment" not in html
+
+
 @pytest.mark.django_db
 def test_asso_page_renders_seeded_content(client):
     # Après bascule template→base : le rendu reprend mot pour mot les textes d'origine.

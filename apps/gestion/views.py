@@ -24,6 +24,7 @@ from apps.gestion.forms import (
     ContactContentForm,
     EventForm,
     HomeContentForm,
+    HomeDisplayForm,
     InvitationForm,
     KeyFigureForm,
     MissionForm,
@@ -57,7 +58,9 @@ class DashboardView(ValidatedRequiredMixin, TemplateView):
         # Onglet Accueil
         context["ticker_items"] = TickerItem.objects.all()
         context["ticker_form"] = TickerItemForm()
-        context["home_form"] = HomeContentForm(instance=HomeContent.load())
+        home = HomeContent.load()
+        context["home_form"] = HomeContentForm(instance=home)
+        context["home_display_form"] = HomeDisplayForm(instance=home)
         context["home_ctas_list"] = self._ordered_list_ctx(
             "home-cta", CallToAction.objects.filter(page=CallToAction.HOME)
         )
@@ -106,6 +109,17 @@ class HomeContentUpdateView(ValidatedRequiredMixin, View):
         else:
             # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
             messages.error(request, "Hero non enregistré :\n" + form.errors.as_text())
+        return redirect("gestion:dashboard")
+
+
+class HomeDisplayUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        form = HomeDisplayForm(request.POST, instance=HomeContent.load())
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Affichage de l'accueil enregistré.")
+        else:
+            messages.error(request, "Affichage non enregistré :\n" + form.errors.as_text())
         return redirect("gestion:dashboard")
 
 

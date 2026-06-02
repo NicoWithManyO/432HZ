@@ -102,6 +102,7 @@
   </div>
 </section>
 
+{% if news_count %}
 <section id="actus" class="border-b-2 border-ink py-[var(--section-y)]">
   <div class="wrap">
     {% include "public/_section_head.html" with kicker="Du neuf" title="Actus" more_url=actus_url more_label="Toutes les actus" %}
@@ -117,6 +118,7 @@
     {% endif %}
   </div>
 </section>
+{% endif %}
 
 <section id="adherer" class="relative overflow-hidden border-b-2 border-ink bg-ink text-paper py-[var(--section-y)]">
   <div class="wrap relative z-[2] text-center">

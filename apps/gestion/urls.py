@@ -17,6 +17,11 @@ urlpatterns = [
     path("", views.DashboardView.as_view(), name="dashboard"),
     # Contenus du site (hero accueil + bandeau défilant)
     path("accueil/textes/", views.HomeContentUpdateView.as_view(), name="home-content-update"),
+    path(
+        "accueil/affichage/",
+        views.HomeDisplayUpdateView.as_view(),
+        name="home-display-update",
+    ),
     path("bandeau/ajouter/", views.TickerItemCreateView.as_view(), name="ticker-create"),
     path(
         "bandeau/<uuid:pk>/supprimer/",

@@ -87,6 +87,20 @@
     </div>
   </details>
 
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Affichage</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Combien d'events et d'actus afficher sur l'accueil (0 masque la section).</p>
+      <form method="post" action="{% url 'gestion:home-display-update' %}" class="gestion-form flex flex-col gap-4">
+        {% csrf_token %}
+        {{ home_display_form.as_p }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+      </form>
+    </div>
+  </details>
+
 </div>
 
 <div id="panel-asso" role="tabpanel" aria-labelledby="tab-asso" tabindex="0">

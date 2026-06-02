@@ -534,16 +534,46 @@ def test_home_content_update(validated_client):
 
 
 @pytest.mark.django_db
+def test_home_display_update(validated_client):
+    home = HomeContent.load()
+    response = validated_client.post(
+        reverse("gestion:home-display-update"),
+        {"events_count": 5, "news_count": 6},
+        follow=True,
+    )
+    home.refresh_from_db()
+    assert home.events_count == 5
+    assert home.news_count == 6
+    assert "Affichage de l&#x27;accueil enregistré" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_home_display_update_rejects_over_max(validated_client):
+    home = HomeContent.load()
+    before = home.events_count
+    response = validated_client.post(
+        reverse("gestion:home-display-update"),
+        {"events_count": 20, "news_count": 4},
+        follow=True,
+    )
+    home.refresh_from_db()
+    # Borne haute (12) : la valeur hors limite n'est pas enregistrée.
+    assert home.events_count == before
+    assert "non enregistré" in response.content.decode()
+
+
+@pytest.mark.django_db
 def test_dashboard_renders_tabs_and_accordions(validated_client):
     # Onglets : un par page éditable, chacun relié à son panneau (aria-controls).
     html = validated_client.get(reverse("gestion:dashboard")).content.decode()
     for slug in ("accueil", "asso", "contact", "mentions"):
         assert f'aria-controls="panel-{slug}"' in html
         assert f'id="panel-{slug}"' in html
-    # Accordéons repliables : 3 sur l'accueil (Hero + Bandeau + Boutons) + 4 sur L'asso
-    # (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes & coordonnées
-    # + Réseaux).
-    assert html.count('class="gestion-accordion"') == 9
+    # Accordéons repliables : 4 sur l'accueil (Hero + Bandeau + Boutons + Affichage) + 4 sur
+    # L'asso (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes &
+    # coordonnées + Réseaux).
+    assert html.count('class="gestion-accordion"') == 10
+    assert reverse("gestion:home-display-update") in html
 
 
 # --- Contenu page L'asso : singleton + sanitize + édition ---

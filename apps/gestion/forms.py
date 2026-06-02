@@ -163,6 +163,23 @@ class HomeContentForm(forms.ModelForm):
         }
 
 
+class HomeDisplayForm(forms.ModelForm):
+    """Réglage de l'affichage de l'accueil : combien d'events et d'actus on montre
+    (0 = section masquée, plafond posé par les validateurs du modèle)."""
+
+    class Meta:
+        model = HomeContent
+        fields = ["events_count", "news_count"]
+        labels = {
+            "events_count": "Nombre d'events à venir",
+            "news_count": "Nombre d'actus",
+        }
+        help_texts = {
+            "events_count": "0 masque la grille des events suivants (la une reste affichée).",
+            "news_count": "0 masque la section Actus.",
+        }
+
+
 class AssoContentForm(forms.ModelForm):
     """Édition des textes de la page L'asso (manifeste en HTML léger via l'éditeur riche)."""
 

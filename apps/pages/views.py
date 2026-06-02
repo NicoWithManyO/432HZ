@@ -29,22 +29,34 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["home"] = HomeContent.load()
+        home = HomeContent.load()
+        context["home"] = home
         context["home_ctas"] = CallToAction.objects.filter(page=CallToAction.HOME)
+
+        # Nombres affichés, configurés en gestion (repli sur les défauts du modèle si la base
+        # n'a pas encore de contenu). Exposés au template pour masquer la section Actus à 0.
+        events_count = (
+            home.events_count if home else HomeContent._meta.get_field("events_count").default
+        )
+        news_count = (
+            home.news_count if home else HomeContent._meta.get_field("news_count").default
+        )
+        context["news_count"] = news_count
 
         # À venir, du plus proche au plus lointain (cover préchargée → pas de N+1).
         upcoming = (
             Event.objects.published().upcoming().select_related("cover").order_by("starts_at")
         )
-        # Vedette = l'event coché « à la une » le plus proche, sinon le prochain event.
+        # Vedette = l'event coché « à la une » le plus proche, sinon le prochain event
+        # (indépendante de `events_count` : elle s'affiche toujours si elle existe).
         featured = upcoming.filter(is_featured=True).first() or upcoming.first()
         context["featured_event"] = featured
-        # Grille = les events suivants, hors vedette.
+        # Grille = les events suivants, hors vedette (limitée au nombre configuré).
         context["upcoming_events"] = (
-            list(upcoming.exclude(pk=featured.pk)[:3]) if featured else []
+            list(upcoming.exclude(pk=featured.pk)[:events_count]) if featured else []
         )
 
-        context["recent_news"] = list(News.objects.published()[:4])
+        context["recent_news"] = list(News.objects.published()[:news_count])
         return context
 
 

@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator
 from django.db import models
 
 from apps.common.models import SanitizedHTMLModel, SingletonModel, UUIDModel
@@ -24,6 +25,10 @@ class HomeContent(UUIDModel):
     subtitle = models.CharField(max_length=120)
     punchline = models.CharField(max_length=200)  # balise légère [r]…[/r] pour le rouge
     intro = models.TextField()
+    # Nombre d'items affichés sur l'accueil (0 = section masquée, plafonné à 12). La vedette
+    # « à la une » est indépendante de `events_count` (elle s'affiche toujours si elle existe).
+    events_count = models.PositiveSmallIntegerField(default=3, validators=[MaxValueValidator(12)])
+    news_count = models.PositiveSmallIntegerField(default=4, validators=[MaxValueValidator(12)])
 
     def __str__(self):
         return self.subtitle
