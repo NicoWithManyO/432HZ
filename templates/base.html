@@ -100,9 +100,9 @@
           <h4 class="font-mono uppercase tracking-[.13em] text-[.72rem] text-red mb-[14px]">Réseaux</h4>
           <ul class="space-y-[9px]">
             <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{% url 'contact' %}">Contact</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">Facebook</a></li>
-            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://soundcloud.com/" target="_blank" rel="noopener noreferrer">SoundCloud</a></li>
+            {% for link in footer_social_links %}
+            <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a></li>
+            {% endfor %}
           </ul>
         </div>
       </div>

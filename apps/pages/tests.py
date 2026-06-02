@@ -454,7 +454,7 @@ def test_contact_page_renders_seeded_content(client):
     assert "Une question, une proposition de collaboration" in html
     assert 'href="mailto:contact@432hz.fr"' in html
     assert "Annecy, Haute-Savoie" in html
-    # Les 3 réseaux seedés (via le contexte : le footer liste les mêmes libellés en dur).
+    # Les 3 réseaux seedés (cochés « afficher sur la page » par défaut).
     labels = [link.label for link in response.context["social_links"]]
     assert labels == ["Instagram", "Facebook", "SoundCloud"]
 
@@ -462,12 +462,29 @@ def test_contact_page_renders_seeded_content(client):
 @pytest.mark.django_db
 def test_contact_social_links_are_free(client):
     # Liste libre : on peut tout supprimer (bloc réseaux vide sans casser la page).
-    # NB : le footer de base.html liste les mêmes réseaux en dur → on vérifie via le
-    # contexte (la donnée de la page), pas le HTML pollué par le footer.
     SocialLink.objects.all().delete()
     response = client.get(reverse("contact"))
     assert response.status_code == 200
     assert list(response.context["social_links"]) == []
+
+
+@pytest.mark.django_db
+def test_social_link_page_and_footer_toggles_are_independent(client):
+    # Chaque réseau s'affiche indépendamment sur la page Contact et/ou dans le footer.
+    SocialLink.objects.all().delete()
+    SocialLink.objects.create(label="PageOnly", url="https://p.test/", show_in_footer=False)
+    SocialLink.objects.create(label="FooterOnly", url="https://f.test/", show_on_page=False)
+    SocialLink.objects.create(label="Both", url="https://b.test/")
+
+    # Page Contact : seuls show_on_page=True (PageOnly + Both).
+    page_labels = [link.label for link in client.get(reverse("contact")).context["social_links"]]
+    assert page_labels == ["PageOnly", "Both"]
+
+    # Footer (site-wide via context processor) : seuls show_in_footer=True (FooterOnly + Both).
+    footer_html = client.get(reverse("home")).content.decode()
+    assert "https://f.test/" in footer_html
+    assert "https://b.test/" in footer_html
+    assert "https://p.test/" not in footer_html
 
 
 @pytest.mark.django_db

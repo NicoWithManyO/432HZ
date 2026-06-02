@@ -139,11 +139,14 @@ class ContactContent(SingletonModel, SanitizedHTMLModel, UUIDModel):
 
 
 class SocialLink(UUIDModel):
-    """Un lien de réseau social affiché sur la page Contact. Le lien est rendu tel quel
-    dans un href : `URLField` n'accepte que http(s)/ftp(s) (donc pas de `javascript:`)."""
+    """Un lien de réseau social. Le lien est rendu tel quel dans un href : `URLField`
+    n'accepte que http(s)/ftp(s) (donc pas de `javascript:`). Chaque lien s'affiche
+    indépendamment sur la page Contact et/ou dans le footer (les deux par défaut)."""
 
     label = models.CharField(max_length=60)
     url = models.URLField()
+    show_on_page = models.BooleanField(default=True)  # bloc « Réseaux » de la page Contact
+    show_in_footer = models.BooleanField(default=True)  # colonne « Réseaux » du footer
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

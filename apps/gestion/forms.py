@@ -251,7 +251,8 @@ class ContactContentForm(forms.ModelForm):
 
 
 class SocialLinkForm(forms.ModelForm):
-    """Ajout d'un lien de réseau social (l'ordre est posé par la vue)."""
+    """Ajout d'un lien de réseau social (l'ordre est posé par la vue). Deux cases
+    indépendantes : affichage sur la page Contact et/ou dans le footer."""
 
     # `assume_scheme="https"` : schéma par défaut d'une URL sans protocole (et défaut
     # explicite de Django 6.0 → silence le warning de transition).
@@ -259,7 +260,11 @@ class SocialLinkForm(forms.ModelForm):
 
     class Meta:
         model = SocialLink
-        fields = ["label", "url"]
+        fields = ["label", "url", "show_on_page", "show_in_footer"]
+        labels = {
+            "show_on_page": "Afficher sur la page Contact",
+            "show_in_footer": "Afficher dans le footer",
+        }
 
 
 class MentionsContentForm(forms.ModelForm):

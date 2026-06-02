@@ -242,7 +242,8 @@ class ContactView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["contact"] = ContactContent.load()
-        context["social_links"] = SocialLink.objects.all()
+        # Seuls les liens cochés « afficher sur la page » (le footer a son propre filtre).
+        context["social_links"] = SocialLink.objects.filter(show_on_page=True)
         return context
 
 
