@@ -10,7 +10,7 @@ from easy_thumbnails.files import get_thumbnailer
 from apps.common.models import SlugHistory
 from apps.events.models import Event, EventImage
 from apps.news.models import News, NewsImage
-from apps.pages.models import HomeContent
+from apps.pages.models import AssoContent, CallToAction, HomeContent, KeyFigure, Mission
 from apps.pages.templatetags.pages import plain_excerpt
 
 
@@ -22,6 +22,7 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["home"] = HomeContent.load()
+        context["home_ctas"] = CallToAction.objects.filter(page=CallToAction.HOME)
 
         # À venir, du plus proche au plus lointain (cover préchargée → pas de N+1).
         upcoming = (
@@ -200,6 +201,14 @@ class NewsDetailView(SlugRedirectMixin, ArticleOpenGraphMixin, DetailView):
 
 class AssoView(TemplateView):
     template_name = "public/asso.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["asso"] = AssoContent.load()
+        context["missions"] = Mission.objects.all()
+        context["key_figures"] = KeyFigure.objects.all()
+        context["asso_ctas"] = CallToAction.objects.filter(page=CallToAction.ASSO)
+        return context
 
 
 class AdhererView(TemplateView):

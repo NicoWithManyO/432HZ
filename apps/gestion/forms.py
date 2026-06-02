@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from django import forms
@@ -6,7 +7,14 @@ from apps.accounts.models import Invitation
 from apps.events.models import Event
 from apps.media.models import Image
 from apps.news.models import News
-from apps.pages.models import HomeContent, TickerItem
+from apps.pages.models import (
+    AssoContent,
+    CallToAction,
+    HomeContent,
+    KeyFigure,
+    Mission,
+    TickerItem,
+)
 
 # Format attendu/rendu par l'input HTML <input type="datetime-local">.
 _DATETIME_LOCAL = "%Y-%m-%dT%H:%M"
@@ -151,3 +159,57 @@ class HomeContentForm(forms.ModelForm):
         widgets = {
             "intro": forms.Textarea(attrs={"rows": 3}),
         }
+
+
+class AssoContentForm(forms.ModelForm):
+    """Édition des textes de la page L'asso (manifeste en HTML léger via l'éditeur riche)."""
+
+    class Meta:
+        model = AssoContent
+        fields = [
+            "kicker", "title", "manifesto", "missions_kicker", "missions_title",
+        ]
+        widgets = {
+            "manifesto": forms.Textarea(attrs={"rows": 6, "data-richtext": True}),
+        }
+
+
+class CallToActionForm(forms.ModelForm):
+    """Ajout d'un bouton (la page et l'ordre sont posés par la vue)."""
+
+    class Meta:
+        model = CallToAction
+        fields = ["label", "url", "variant"]
+        help_texts = {
+            "url": "Chemin interne (ex. /adherer/) ou URL externe.",
+        }
+
+    def clean_url(self):
+        # Le lien est rendu tel quel dans un href : on bloque les schémas dangereux
+        # (javascript:, data:…) qui seraient une XSS au clic. On autorise un chemin
+        # interne (/…), une ancre (#…) ou un schéma sûr.
+        url = self.cleaned_data["url"].strip()
+        if url.startswith(("/", "#")) or re.match(r"^(https?|mailto|tel):", url, re.IGNORECASE):
+            return url
+        raise forms.ValidationError(
+            "Utilisez un chemin interne (/…), une ancre (#…) ou une URL http(s)/mailto/tel."
+        )
+
+
+class MissionForm(forms.ModelForm):
+    """Ajout d'une mission (l'ordre est posé par la vue)."""
+
+    class Meta:
+        model = Mission
+        fields = ["title", "description"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class KeyFigureForm(forms.ModelForm):
+    """Ajout d'un chiffre-clé (l'ordre est posé par la vue)."""
+
+    class Meta:
+        model = KeyFigure
+        fields = ["text"]

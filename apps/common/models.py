@@ -13,6 +13,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.common.sanitize import clean_html
+
 DRAFT = "draft"
 PUBLISHED = "published"
 STATUS_CHOICES = [
@@ -38,6 +40,51 @@ class TimeStampedModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class SingletonModel(models.Model):
+    """Modèle à ligne unique : `save()` réutilise toujours la pk de l'unique ligne
+    existante (jamais de 2e ligne), `load()` renvoie cette ligne (ou None).
+
+    Extrait du pattern de `HomeContent` pour les contenus de pages singleton (asso,
+    contact, mentions). La pk UUID étant posée dès l'instanciation, on détecte un objet
+    neuf via `_state.adding` et on neutralise le `force_insert` d'`objects.create`."""
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            existing = type(self).objects.first()
+            if existing is not None:
+                self.pk = existing.pk
+                self._state.adding = False
+                kwargs.pop("force_insert", None)
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        return cls.objects.first()
+
+
+class SanitizedHTMLModel(models.Model):
+    """Sanitize chaque champ riche listé dans `RICH_TEXT_FIELDS` au `save()`.
+
+    Barrière XSS serveur (nh3), appliquée quel que soit le chemin d'écriture et
+    idempotente. Généralise le `clean_html` mono-champ d'events/news à des modèles
+    portant plusieurs champs HTML."""
+
+    RICH_TEXT_FIELDS = ()
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        for field in self.RICH_TEXT_FIELDS:
+            # `or ""` : nh3.clean refuse None ; un champ riche vide doit rester ""
+            # (cohérent avec le défaut des TextField), pas faire planter le save.
+            setattr(self, field, clean_html(getattr(self, field) or ""))
+        super().save(*args, **kwargs)
 
 
 class PublishableQuerySet(models.QuerySet):

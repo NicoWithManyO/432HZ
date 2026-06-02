@@ -2,9 +2,10 @@
 
 > Refonte **repartie de zéro** du site de l'association culturelle **432 Hz** (Annecy).
 > On **garde la charte graphique** (`DESIGN.md` + `design/` + `reference/maquette-accueil.html`).
-> On **abandonne** l'ancienne architecture headless et le moteur de blocs : les pages sont
-> désormais **fixes** (codées en dur), et les admins postent **events** et **actus** via une
-> interface conviviale.
+> On **abandonne** l'ancienne architecture headless et le moteur de blocs : les pages ont une
+> **structure figée** (gabarits codés en dur), et les admins postent **events** et **actus** via une
+> interface conviviale. Le **contenu textuel** des pages de présentation reste éditable depuis la
+> gestion, via un **modèle singleton typé par page** (pas de CMS générique ni de composition de blocs).
 >
 > Ce document est le point de départ pour reconstruire le projet dans une nouvelle session.
 > Sources liées : `DESIGN.md` (visuel, fait foi), `CONVENTIONS.md` (code/tests/git), `design/`
@@ -156,6 +157,24 @@ vise désormais le **strict nécessaire**, en monolithe Django.
 | `published_at` | DateTime, null | posé au 1er passage en `published` |
 | `created_at` / `updated_at` | DateTime | |
 
+### `pages` (contenu éditable des pages à structure figée)
+
+Les pages de présentation gardent un gabarit figé ; seul leur **contenu textuel** est stocké en base
+et éditable depuis la gestion. Un **modèle singleton par page** (une seule ligne, garantie par
+`SingletonModel`) + des **modèles enfants ordonnés** pour les listes répétables. Le HTML riche est
+sanitizé (`SanitizedHTMLModel` → nh3) au `save()`. Pas de moteur de blocs.
+
+| Modèle | Rôle | Champs notables |
+|---|---|---|
+| `HomeContent` (singleton) | hero de l'accueil | `subtitle`, `punchline` (`[r]…[/r]`), `intro` |
+| `TickerItem` (liste) | phrases du bandeau défilant | `text`, `highlighted`, `order` |
+| `AssoContent` (singleton) | textes page L'asso | `kicker`, `title`, `manifesto` (**HTML léger**), `missions_kicker`, `missions_title` |
+| `Mission` (liste) | missions de l'asso | `title`, `description`, `order` |
+| `KeyFigure` (liste) | chiffres-clés de l'asso | `text`, `order` |
+| `CallToAction` (liste) | boutons d'action (hero accueil + L'asso) | `page` (home\|asso), `label`, `url`, `variant` (red\|ghost), `order` |
+
+> Contact & Mentions légales suivront le même schéma (singleton + listes), pages P3.2 §B/§C.
+
 ### `accounts` (auth)
 - **User** : modèle Django standard (ou `AbstractUser` custom si on veut un email-login plus tard).
 - **Profile** (1-1 User) : `role` (`owner` \| `editor`), `is_validated` (bool), `created_at`.
@@ -204,11 +223,12 @@ editor). Création de compte uniquement via **invitation** (§9).
 1. **Connexion** : formulaire login. Rate-limité.
 2. **Tableau de bord** : raccourcis « Nouvel event », « Nouvelle actu », listes récentes avec pastille
    de statut (brouillon/publié).
-   - **Édition des contenus de pages** organisée en **onglets, un par page** (Accueil d'abord ; **L'asso
-     & Contact plus tard**). Dans chaque onglet, les blocs de formulaire sont en **accordéon** : repliés
-     par défaut, on les déroule pour éditer (ex. accueil = blocs « Hero » + « Bandeau défilant »).
-   - NB : rendre **L'asso & Contact** éditables fera évoluer ces pages aujourd'hui **fixes** (§5) vers du
-     contenu stocké en base — décision à acter au moment de l'implémenter (après P3).
+   - **Édition des contenus de pages** organisée en **onglets, un par page** (Accueil + L'asso faits ;
+     Contact & Mentions à suivre). Dans chaque onglet, les blocs de formulaire sont en **accordéon** :
+     repliés par défaut, on les déroule pour éditer (ex. accueil = blocs « Hero » + « Bandeau défilant »
+     + « Boutons » ; L'asso = « Textes » + « Missions » + « Chiffres-clés » + « Boutons »).
+   - Décision actée : ces pages gardent une **structure figée**, seul leur contenu devient éditable
+     (singleton par page + listes, cf §5 `pages`) — pas de moteur de blocs.
 3. **Events — liste** : tableau (titre, date, statut, modifié le), filtres à venir/passés/brouillons,
    actions éditer/supprimer.
 4. **Event — formulaire** (création/édition) :

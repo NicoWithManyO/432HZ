@@ -29,6 +29,28 @@ urlpatterns = [
         name="ticker-toggle-highlight",
     ),
     path("bandeau/<uuid:pk>/deplacer/", views.TickerItemMoveView.as_view(), name="ticker-move"),
+    # Contenu page L'asso (textes) + listes ordonnées génériques (missions, chiffres, …)
+    path("asso/textes/", views.AssoContentUpdateView.as_view(), name="asso-content-update"),
+    path(
+        "listes/<str:key>/ajouter/",
+        views.OrderedListCreateView.as_view(),
+        name="list-create",
+    ),
+    path(
+        "listes/<str:key>/<uuid:pk>/modifier/",
+        views.OrderedListUpdateView.as_view(),
+        name="list-update",
+    ),
+    path(
+        "listes/<str:key>/<uuid:pk>/supprimer/",
+        views.OrderedListDeleteView.as_view(),
+        name="list-delete",
+    ),
+    path(
+        "listes/<str:key>/<uuid:pk>/deplacer/",
+        views.OrderedListMoveView.as_view(),
+        name="list-move",
+    ),
     path("connexion/", LoginView.as_view(template_name="gestion/login.html"), name="login"),
     path("deconnexion/", LogoutView.as_view(), name="logout"),
     path("invitation/<str:token>/", accept_invitation, name="accept-invitation"),

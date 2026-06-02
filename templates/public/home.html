@@ -22,8 +22,9 @@
     <p class="max-w-[46ch] mt-[22px] text-[clamp(1rem,2vw,1.12rem)] text-ink-soft rv">{{ home.intro|linebreaksbr }}</p>
 
     <div class="flex flex-wrap gap-[14px] mt-[30px] rv">
-      <a href="{% url 'adherer' %}" class="btn btn--red">Rejoindre l'asso</a>
-      <a href="{{ agenda_url }}" class="btn btn--ghost">Voir l'agenda →</a>
+      {% for cta in home_ctas %}
+      <a href="{{ cta.url }}" class="btn btn--{{ cta.variant }}">{{ cta.label }}</a>
+      {% endfor %}
     </div>
 
     {# Bandeau signature Waveform (cf DESIGN.md §7). #}

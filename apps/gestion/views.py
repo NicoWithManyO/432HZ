@@ -1,9 +1,9 @@
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Max, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import (
     CreateView,
@@ -19,30 +19,68 @@ from apps.accounts.permissions import OwnerRequiredMixin, ValidatedRequiredMixin
 from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
 from apps.gestion.forms import (
+    AssoContentForm,
+    CallToActionForm,
     EventForm,
     HomeContentForm,
     InvitationForm,
+    KeyFigureForm,
+    MissionForm,
     NewsForm,
     TickerItemForm,
 )
 from apps.media.forms import ImageMetaForm, ImageUploadForm
 from apps.media.models import Image
 from apps.news.models import News
-from apps.pages.models import HomeContent, TickerItem
+from apps.pages.models import (
+    AssoContent,
+    CallToAction,
+    HomeContent,
+    KeyFigure,
+    Mission,
+    TickerItem,
+)
 
 
 class DashboardView(ValidatedRequiredMixin, TemplateView):
     """Tableau de bord : point d'entrée de la gestion + édition des contenus du site
-    (hero de l'accueil, bandeau défilant)."""
+    (accueil, bandeau, page L'asso)."""
 
     template_name = "gestion/dashboard.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Onglet Accueil
         context["ticker_items"] = TickerItem.objects.all()
         context["ticker_form"] = TickerItemForm()
         context["home_form"] = HomeContentForm(instance=HomeContent.load())
+        context["home_ctas_list"] = self._ordered_list_ctx(
+            "home-cta", CallToAction.objects.filter(page=CallToAction.HOME)
+        )
+        # Onglet L'asso
+        context["asso_form"] = AssoContentForm(instance=AssoContent.load())
+        context["missions_list"] = self._ordered_list_ctx("mission", Mission.objects.all())
+        context["keyfigures_list"] = self._ordered_list_ctx(
+            "key-figure", KeyFigure.objects.all()
+        )
+        context["asso_ctas_list"] = self._ordered_list_ctx(
+            "asso-cta", CallToAction.objects.filter(page=CallToAction.ASSO)
+        )
         return context
+
+    @staticmethod
+    def _ordered_list_ctx(key, queryset):
+        """Contexte d'une liste éditable : paires (objet, form d'édition préfixé) + form
+        d'ajout. Préfixes distincts → pas d'id HTML dupliqués entre les formulaires."""
+        form_class = ORDERED_LISTS[key]["form"]
+        return {
+            "key": key,
+            "items": [
+                (obj, form_class(instance=obj, prefix=edit_prefix(key, obj.pk)))
+                for obj in queryset
+            ],
+            "add_form": form_class(prefix=add_prefix(key)),
+        }
 
 
 # --- Contenus du site (hero accueil + bandeau) ---
@@ -113,6 +151,131 @@ class TickerItemMoveView(ValidatedRequiredMixin, View):
             with transaction.atomic():
                 TickerItem.objects.bulk_update([item, neighbor], ["order"])
         return redirect("gestion:dashboard")
+
+
+# --- Contenu page L'asso (textes + listes missions/chiffres) ---
+
+
+def _dashboard_tab_url(tab):
+    """URL du dashboard ancrée sur un onglet : un POST de contenu y revient (sinon on
+    retombe sur l'onglet Accueil)."""
+    return reverse("gestion:dashboard") + f"#tab-{tab}"
+
+
+class AssoContentUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        form = AssoContentForm(request.POST, instance=AssoContent.load())
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Textes de la page L'asso enregistrés.")
+        else:
+            # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
+            messages.error(request, "Textes non enregistrés :\n" + form.errors.as_text())
+        return redirect(_dashboard_tab_url("asso"))
+
+
+# --- CRUD générique de listes ordonnées (missions, chiffres-clés, …) ---
+
+# Registre : une clé d'URL → modèle édité, form d'ajout, onglet de retour, et `scope`
+# optionnel (filtre/valeurs fixes) pour les modèles qui portent plusieurs listes dans une
+# même table (ex. CallToAction partagé entre l'accueil et L'asso via `page`). Évite de
+# dupliquer la mécanique append/delete/move pour chaque petite liste de contenu.
+ORDERED_LISTS = {
+    "mission": {"model": Mission, "form": MissionForm, "tab": "asso"},
+    "key-figure": {"model": KeyFigure, "form": KeyFigureForm, "tab": "asso"},
+    "home-cta": {
+        "model": CallToAction, "form": CallToActionForm, "tab": "accueil",
+        "scope": {"page": CallToAction.HOME},
+    },
+    "asso-cta": {
+        "model": CallToAction, "form": CallToActionForm, "tab": "asso",
+        "scope": {"page": CallToAction.ASSO},
+    },
+}
+
+
+def _ordered_list_config(key):
+    config = ORDERED_LISTS.get(key)
+    if config is None:
+        raise Http404("Liste inconnue.")
+    return config
+
+
+def add_prefix(key):
+    """Préfixe du formulaire d'ajout (plusieurs formulaires cohabitent sur le dashboard :
+    un préfixe par liste évite les noms/id de champs dupliqués)."""
+    return f"{key}-new"
+
+
+def edit_prefix(key, pk):
+    """Préfixe du formulaire d'édition d'un item (unique par item)."""
+    return f"{key}-{pk}"
+
+
+class OrderedListCreateView(ValidatedRequiredMixin, View):
+    def post(self, request, key):
+        config = _ordered_list_config(key)
+        scope = config.get("scope", {})
+        form = config["form"](request.POST, prefix=add_prefix(key))
+        if form.is_valid():
+            item = form.save(commit=False)
+            # Valeurs de scope (ex. page=home) posées par la vue, pas saisies par l'éditeur.
+            for field, value in scope.items():
+                setattr(item, field, value)
+            # Nouvel item ajouté en fin de liste (de son scope).
+            last = config["model"].objects.filter(**scope).aggregate(Max("order"))["order__max"]
+            item.order = last + 1 if last is not None else 0
+            item.save()
+            messages.success(request, "Élément ajouté.")
+        else:
+            messages.error(request, "Élément non ajouté :\n" + form.errors.as_text())
+        return redirect(_dashboard_tab_url(config["tab"]))
+
+
+class OrderedListUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request, key, pk):
+        config = _ordered_list_config(key)
+        # `**scope` dans le lookup : un pk hors scope (autre page) renvoie 404 plutôt que
+        # d'éditer l'item d'une autre liste.
+        item = get_object_or_404(config["model"], pk=pk, **config.get("scope", {}))
+        form = config["form"](request.POST, instance=item, prefix=edit_prefix(key, pk))
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Élément modifié.")
+        else:
+            messages.error(request, "Élément non modifié :\n" + form.errors.as_text())
+        return redirect(_dashboard_tab_url(config["tab"]))
+
+
+class OrderedListDeleteView(ValidatedRequiredMixin, View):
+    def post(self, request, key, pk):
+        config = _ordered_list_config(key)
+        get_object_or_404(config["model"], pk=pk, **config.get("scope", {})).delete()
+        return redirect(_dashboard_tab_url(config["tab"]))
+
+
+class OrderedListMoveView(ValidatedRequiredMixin, View):
+    def post(self, request, key, pk):
+        config = _ordered_list_config(key)
+        model = config["model"]
+        scope = config.get("scope", {})
+        # Item récupéré dans son scope (un pk d'une autre page → 404, pas de swap croisé).
+        item = get_object_or_404(model, pk=pk, **scope)
+        # Échange l'ordre avec le voisin immédiat dans le sens demandé, au sein du scope.
+        siblings = model.objects.filter(**scope)
+        direction = request.GET.get("dir")
+        if direction == "up":
+            neighbor = siblings.filter(order__lt=item.order).order_by("-order").first()
+        elif direction == "down":
+            neighbor = siblings.filter(order__gt=item.order).order_by("order").first()
+        else:
+            neighbor = None
+        if neighbor is not None:
+            item.order, neighbor.order = neighbor.order, item.order
+            # Échange atomique : sinon un échec partiel laisserait deux items au même `order`.
+            with transaction.atomic():
+                model.objects.bulk_update([item, neighbor], ["order"])
+        return redirect(_dashboard_tab_url(config["tab"]))
 
 
 # --- Médiathèque ---

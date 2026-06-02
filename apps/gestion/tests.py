@@ -16,7 +16,14 @@ from apps.events.models import Event, EventImage
 from apps.gestion.forms import EventForm
 from apps.media.models import Image
 from apps.news.models import News
-from apps.pages.models import HomeContent, TickerItem
+from apps.pages.models import (
+    AssoContent,
+    CallToAction,
+    HomeContent,
+    KeyFigure,
+    Mission,
+    TickerItem,
+)
 
 
 def test_clean_html_keeps_allowed_tags():
@@ -531,5 +538,212 @@ def test_dashboard_renders_tabs_and_accordions(validated_client):
     for slug in ("accueil", "asso", "contact", "mentions"):
         assert f'aria-controls="panel-{slug}"' in html
         assert f'id="panel-{slug}"' in html
-    # Blocs existants de l'accueil passés en accordéon repliable.
-    assert html.count('class="gestion-accordion"') == 2
+    # Accordéons repliables : 3 sur l'accueil (Hero + Bandeau + Boutons) + 4 sur L'asso
+    # (Textes + Missions + Chiffres-clés + Boutons).
+    assert html.count('class="gestion-accordion"') == 7
+
+
+# --- Contenu page L'asso : singleton + sanitize + édition ---
+
+
+@pytest.mark.django_db
+def test_asso_content_is_singleton():
+    # Le seed pose déjà l'unique ligne ; toute sauvegarde « neuve » la met à jour.
+    assert AssoContent.objects.count() == 1
+    AssoContent(
+        kicker="K", title="T", manifesto="<p>x</p>",
+        missions_kicker="MK", missions_title="MT",
+    ).save()
+    assert AssoContent.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_asso_content_sanitizes_manifesto_on_save():
+    asso = AssoContent.load()
+    asso.manifesto = "<p>ok</p><script>alert(1)</script>"
+    asso.save()
+    asso.refresh_from_db()
+    assert "<script>" not in asso.manifesto
+    assert "alert(1)" not in asso.manifesto
+    assert "<p>ok</p>" in asso.manifesto
+
+
+@pytest.mark.django_db
+def test_sanitized_html_model_tolerates_none_field():
+    # Mixin partagé : un champ riche à None ne doit pas faire planter le save (→ "").
+    asso = AssoContent.load()
+    asso.manifesto = None
+    asso.save()
+    asso.refresh_from_db()
+    assert asso.manifesto == ""
+
+
+@pytest.mark.django_db
+def test_asso_content_update(validated_client):
+    response = validated_client.post(
+        reverse("gestion:asso-content-update"),
+        {
+            "kicker": "Le collectif",
+            "title": "432 Hz",
+            "manifesto": "<p>Nouveau manifeste.</p>",
+            "missions_kicker": "Nos missions",
+            "missions_title": "Ce qu'on défend",
+        },
+        follow=True,
+    )
+    asso = AssoContent.load()
+    assert asso.kicker == "Le collectif"
+    assert asso.missions_title == "Ce qu'on défend"
+    # Fragment sans apostrophe (Django échappe ' en &#x27;), propre au message de succès.
+    assert "page L" in response.content.decode() and "enregistrés" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_asso_content_update_invalid_surfaces_error(validated_client):
+    response = validated_client.post(
+        reverse("gestion:asso-content-update"),
+        {"kicker": "", "title": "", "manifesto": "", "missions_kicker": "",
+         "missions_title": ""},
+        follow=True,
+    )
+    assert "non enregistrés" in response.content.decode()
+
+
+# --- CRUD générique de listes ordonnées (missions, chiffres-clés) ---
+
+
+# Les formulaires d'ajout/édition sont préfixés (plusieurs cohabitent sur le dashboard).
+@pytest.mark.django_db
+def test_ordered_list_create_appends_at_end(validated_client):
+    Mission.objects.all().delete()
+    Mission.objects.create(title="Première", description="d", order=0)
+    validated_client.post(
+        reverse("gestion:list-create", args=["mission"]),
+        {"mission-new-title": "Nouvelle", "mission-new-description": "desc"},
+    )
+    created = Mission.objects.get(title="Nouvelle")
+    assert created.order == 1
+
+
+@pytest.mark.django_db
+def test_ordered_list_create_invalid_surfaces_error(validated_client):
+    count = Mission.objects.count()
+    response = validated_client.post(
+        reverse("gestion:list-create", args=["mission"]),
+        {"mission-new-title": "", "mission-new-description": ""},
+        follow=True,
+    )
+    assert Mission.objects.count() == count
+    assert "non ajouté" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_ordered_list_update_edits_item(validated_client):
+    mission = Mission.objects.create(title="Avant", description="d", order=0)
+    response = validated_client.post(
+        reverse("gestion:list-update", args=["mission", mission.pk]),
+        {
+            f"mission-{mission.pk}-title": "Après",
+            f"mission-{mission.pk}-description": "modifiée",
+        },
+        follow=True,
+    )
+    mission.refresh_from_db()
+    assert mission.title == "Après"
+    assert mission.description == "modifiée"
+    assert "modifié" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_ordered_list_delete(validated_client):
+    item = KeyFigure.objects.create(text="À supprimer", order=99)
+    validated_client.post(reverse("gestion:list-delete", args=["key-figure", item.pk]))
+    assert not KeyFigure.objects.filter(pk=item.pk).exists()
+
+
+@pytest.mark.django_db
+def test_ordered_list_move_swaps_order_with_neighbor(validated_client):
+    Mission.objects.all().delete()
+    first = Mission.objects.create(title="A", description="d", order=0)
+    second = Mission.objects.create(title="B", description="d", order=1)
+    validated_client.post(reverse("gestion:list-move", args=["mission", second.pk]) + "?dir=up")
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert second.order == 0
+    assert first.order == 1
+
+
+@pytest.mark.django_db
+def test_cta_create_is_scoped_to_its_page(validated_client):
+    # Le compteur d'ordre repart de 0 par page : ajouter côté asso ne dépend pas du hero.
+    CallToAction.objects.all().delete()
+    CallToAction.objects.create(page=CallToAction.HOME, label="H1", url="/", order=0)
+    CallToAction.objects.create(page=CallToAction.HOME, label="H2", url="/", order=1)
+    validated_client.post(
+        reverse("gestion:list-create", args=["asso-cta"]),
+        {"asso-cta-new-label": "Don", "asso-cta-new-url": "/don/",
+         "asso-cta-new-variant": "ghost"},
+    )
+    created = CallToAction.objects.get(label="Don")
+    assert created.page == CallToAction.ASSO  # scope posé par la vue, pas saisi
+    assert created.variant == "ghost"
+    assert created.order == 0  # 1er bouton de la page asso, indépendant du hero
+
+
+@pytest.mark.django_db
+def test_cta_url_rejects_dangerous_scheme(validated_client):
+    # Le lien est rendu dans un href : un schéma javascript: doit être refusé (XSS).
+    count = CallToAction.objects.count()
+    response = validated_client.post(
+        reverse("gestion:list-create", args=["home-cta"]),
+        {"home-cta-new-label": "X", "home-cta-new-url": "javascript:alert(1)",
+         "home-cta-new-variant": "red"},
+        follow=True,
+    )
+    assert CallToAction.objects.count() == count  # rien créé
+    assert "non ajouté" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_cta_move_stays_within_its_page(validated_client):
+    # Réordonner un bouton asso ne doit pas échanger avec un bouton de l'accueil.
+    CallToAction.objects.all().delete()
+    home = CallToAction.objects.create(page=CallToAction.HOME, label="H", url="/", order=0)
+    a0 = CallToAction.objects.create(page=CallToAction.ASSO, label="A0", url="/", order=0)
+    a1 = CallToAction.objects.create(page=CallToAction.ASSO, label="A1", url="/", order=1)
+    validated_client.post(reverse("gestion:list-move", args=["asso-cta", a1.pk]) + "?dir=up")
+    home.refresh_from_db()
+    a0.refresh_from_db()
+    a1.refresh_from_db()
+    assert a1.order == 0 and a0.order == 1  # échangés entre eux
+    assert home.order == 0  # le hero n'a pas bougé
+
+
+@pytest.mark.django_db
+def test_cta_move_cross_scope_is_404(validated_client):
+    # Un pk de l'accueil via la clé asso-cta → 404 (pas de swap croisé entre pages).
+    home = CallToAction.objects.create(page=CallToAction.HOME, label="H", url="/", order=0)
+    response = validated_client.post(
+        reverse("gestion:list-move", args=["asso-cta", home.pk]) + "?dir=down"
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cta_delete_cross_scope_is_404(validated_client):
+    asso = CallToAction.objects.create(page=CallToAction.ASSO, label="A", url="/", order=0)
+    response = validated_client.post(reverse("gestion:list-delete", args=["home-cta", asso.pk]))
+    assert response.status_code == 404
+    assert CallToAction.objects.filter(pk=asso.pk).exists()  # non supprimé
+
+
+@pytest.mark.django_db
+def test_ordered_list_unknown_key_is_404(validated_client):
+    response = validated_client.post(reverse("gestion:list-create", args=["inconnu"]), {})
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_ordered_list_create_requires_login(client):
+    response = client.post(reverse("gestion:list-create", args=["mission"]), {"title": "X"})
+    assert response.status_code == 302  # anonyme → login

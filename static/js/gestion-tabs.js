@@ -16,8 +16,13 @@ if (tablist) {
     if (focus) tabs[index].focus();
   };
 
-  // État initial : l'onglet marqué aria-selected dans le HTML, sinon le premier.
-  const initial = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
+  // État initial : l'ancre d'URL #tab-xxx (retour d'un POST de contenu) prime, puis
+  // l'onglet marqué aria-selected dans le HTML, sinon le premier.
+  const fromHash = location.hash
+    ? tabs.findIndex((t) => `#${t.id}` === location.hash)
+    : -1;
+  const marked = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
+  const initial = fromHash >= 0 ? fromHash : marked;
   select(initial >= 0 ? initial : 0);
 
   tablist.addEventListener("click", (e) => {

@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
 from apps.news.models import News
-from apps.pages.models import HomeContent, TickerItem
+from apps.pages.models import CallToAction, HomeContent, TickerItem
 from apps.pages.punchline import render_punchline
 
 
@@ -343,3 +343,38 @@ def test_home_renders_section_headings(client):
     html = client.get(reverse("home")).content.decode()
     for heading in ("À l'affiche", "Actus"):
         assert heading in html
+
+
+@pytest.mark.django_db
+def test_home_hero_renders_configured_buttons(client):
+    # Le hero reprend les 2 boutons du seed, avec leur style (rouge / ghost) et destination.
+    html = client.get(reverse("home")).content.decode()
+    assert '<a href="/adherer/" class="btn btn--red">Rejoindre l&#x27;asso</a>' in html
+    assert '<a href="/agenda/" class="btn btn--ghost">Voir l&#x27;agenda →</a>' in html
+
+
+@pytest.mark.django_db
+def test_home_hero_buttons_are_free(client):
+    # Boutons libres : on peut tout supprimer (hero sans bouton, sans casser la page).
+    CallToAction.objects.filter(page=CallToAction.HOME).delete()
+    response = client.get(reverse("home"))
+    assert response.status_code == 200
+    assert "Voir l&#x27;agenda" not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_asso_page_renders_seeded_content(client):
+    # Après bascule template→base : le rendu reprend mot pour mot les textes d'origine.
+    html = client.get(reverse("asso")).content.decode()
+    assert "L&#x27;association" in html  # kicker (apostrophe échappée)
+    assert "432 Hz est une association culturelle annécienne née en 2021" in html
+    assert "Ce qu&#x27;on défend" in html
+    # Les 3 chiffres-clés et les 3 missions numérotées.
+    assert "81 adhérent·e·s" in html
+    assert "Depuis 2021" in html
+    assert "Le spectacle vivant" in html
+    assert "Les manifestations" in html
+    assert ">01<" in html and ">02<" in html and ">03<" in html
+    # CTA toujours présent, pointant vers la destination configurée (Adhérer par défaut).
+    assert "Rejoindre l&#x27;asso" in html
+    assert 'href="/adherer/"' in html

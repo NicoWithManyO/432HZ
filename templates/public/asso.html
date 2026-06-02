@@ -6,53 +6,38 @@
 {% block content %}
 <section class="py-[var(--section-y)]">
   <div class="wrap max-w-[880px]">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">L'association</p>
-    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">432 Hz</h1>
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ asso.kicker }}</p>
+    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">{{ asso.title }}</h1>
 
-    {# TODO: remplacer par le manifeste réel de l'asso. #}
-    <div class="prose mt-8">
-      <p>432 Hz est une association culturelle annécienne née en 2021. On fait vibrer le spectacle
-        vivant : concerts, performances, fêtes de quartier — des rendez-vous accessibles, fabriqués
-        avec et pour les gens d'ici.</p>
-      <p>Notre conviction : la culture se vit ensemble, dans la rue comme sur scène. On rassemble
-        artistes, bénévoles et habitant·es autour d'une programmation exigeante et joyeuse.</p>
-    </div>
+    <div class="prose mt-8">{{ asso.manifesto|safe }}</div>
 
-    {# Chiffres-clés (cf maquette accueil). TODO: tenir à jour. #}
     <div class="flex flex-wrap gap-[12px] mt-10">
-      <span class="font-mono text-[.72rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[12px] py-2">81 adhérent·e·s</span>
-      <span class="font-mono text-[.72rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[12px] py-2">22 bénévoles</span>
-      <span class="font-mono text-[.72rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[12px] py-2">Depuis 2021</span>
+      {% for figure in key_figures %}
+      <span class="font-mono text-[.72rem] uppercase tracking-[.08em] border-[1.5px] border-ink px-[12px] py-2">{{ figure.text }}</span>
+      {% endfor %}
     </div>
   </div>
 </section>
 
 <section class="py-[var(--section-y)]">
   <div class="wrap">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Nos missions</p>
-    <h2 class="font-display font-black text-[clamp(1.7rem,4.4vw,2.6rem)] leading-[1.05] mt-2 mb-[clamp(24px,4vw,34px)]">Ce qu'on défend</h2>
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ asso.missions_kicker }}</p>
+    <h2 class="font-display font-black text-[clamp(1.7rem,4.4vw,2.6rem)] leading-[1.05] mt-2 mb-[clamp(24px,4vw,34px)]">{{ asso.missions_title }}</h2>
 
-    {# 3 missions statutaires. TODO: ajuster les libellés/textes aux statuts. #}
     <div class="grid grid-cols-1 min-[640px]:grid-cols-3 gap-[clamp(20px,2.6vw,30px)]">
+      {% for mission in missions %}
       <div class="border-2 border-ink bg-paper-2 p-[clamp(26px,3.4vw,38px)]">
-        <span class="font-mono text-[.9rem] uppercase tracking-[.1em] text-red font-bold">01</span>
-        <h3 class="font-display font-black text-[1.42rem] leading-tight mt-4">Le spectacle vivant</h3>
-        <p class="text-ink-soft text-[.95rem] leading-relaxed mt-4">Promouvoir et diffuser le spectacle vivant sous toutes ses formes : musique, performance, arts de la rue.</p>
+        <span class="font-mono text-[.9rem] uppercase tracking-[.1em] text-red font-bold">{{ forloop.counter|stringformat:"02d" }}</span>
+        <h3 class="font-display font-black text-[1.42rem] leading-tight mt-4">{{ mission.title }}</h3>
+        <p class="text-ink-soft text-[.95rem] leading-relaxed mt-4">{{ mission.description }}</p>
       </div>
-      <div class="border-2 border-ink bg-paper-2 p-[clamp(26px,3.4vw,38px)]">
-        <span class="font-mono text-[.9rem] uppercase tracking-[.1em] text-red font-bold">02</span>
-        <h3 class="font-display font-black text-[1.42rem] leading-tight mt-4">Les manifestations</h3>
-        <p class="text-ink-soft text-[.95rem] leading-relaxed mt-4">Organiser concerts, fêtes de quartier et événements culturels qui font vivre l'espace public.</p>
-      </div>
-      <div class="border-2 border-ink bg-paper-2 p-[clamp(26px,3.4vw,38px)]">
-        <span class="font-mono text-[.9rem] uppercase tracking-[.1em] text-red font-bold">03</span>
-        <h3 class="font-display font-black text-[1.42rem] leading-tight mt-4">L'éducatif & le préventif</h3>
-        <p class="text-ink-soft text-[.95rem] leading-relaxed mt-4">Mener des actions éducatives et de prévention autour de la pratique culturelle et de la fête responsable.</p>
-      </div>
+      {% endfor %}
     </div>
 
-    <div class="mt-[clamp(32px,5vw,44px)]">
-      <a href="{% url 'adherer' %}" class="btn btn--red">Rejoindre l'asso</a>
+    <div class="flex flex-wrap gap-[14px] mt-[clamp(32px,5vw,44px)]">
+      {% for cta in asso_ctas %}
+      <a href="{{ cta.url }}" class="btn btn--{{ cta.variant }}">{{ cta.label }}</a>
+      {% endfor %}
     </div>
   </div>
 </section>

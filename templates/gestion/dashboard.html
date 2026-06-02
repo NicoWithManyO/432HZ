@@ -77,14 +77,64 @@
     </div>
   </details>
 
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Boutons</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les boutons d'action sous le hero de l'accueil.</p>
+      {% include "gestion/_ordered_list.html" with items=home_ctas_list.items add_form=home_ctas_list.add_form list_key=home_ctas_list.key empty_text="Aucun bouton." %}
+    </div>
+  </details>
+
 </div>
 
-{# --- Onglets à venir : édition du contenu de ces pages prévue ultérieurement --- #}
 <div id="panel-asso" role="tabpanel" aria-labelledby="tab-asso" tabindex="0">
-  <div class="border-2 border-dashed border-line p-[clamp(20px,4vw,40px)] text-center">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted mb-2">À venir</p>
-    <p class="text-ink-soft">L'édition du contenu de la page « L'asso » sera disponible prochainement.</p>
-  </div>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Textes</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Bandeau, titre, manifeste et intitulés de la section missions.</p>
+      <form method="post" action="{% url 'gestion:asso-content-update' %}" class="gestion-form flex flex-col gap-4">
+        {% csrf_token %}
+        {{ asso_form.as_p }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+      </form>
+    </div>
+  </details>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Missions</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les missions (numérotées automatiquement dans l'ordre).</p>
+      {% include "gestion/_ordered_list.html" with items=missions_list.items add_form=missions_list.add_form list_key=missions_list.key empty_text="Aucune mission." %}
+    </div>
+  </details>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Chiffres-clés</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les badges affichés sous le manifeste.</p>
+      {% include "gestion/_ordered_list.html" with items=keyfigures_list.items add_form=keyfigures_list.add_form list_key=keyfigures_list.key empty_text="Aucun chiffre-clé." %}
+    </div>
+  </details>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Boutons</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les boutons d'action en bas de la page « L'asso ».</p>
+      {% include "gestion/_ordered_list.html" with items=asso_ctas_list.items add_form=asso_ctas_list.add_form list_key=asso_ctas_list.key empty_text="Aucun bouton." %}
+    </div>
+  </details>
+
 </div>
 
 <div id="panel-contact" role="tabpanel" aria-labelledby="tab-contact" tabindex="0">
@@ -104,4 +154,5 @@
 
 {% block scripts %}
 <script type="module" src="{% static 'js/gestion-tabs.js' %}"></script>
+<script type="module" src="{% static 'js/gestion-editor.js' %}"></script>
 {% endblock %}
