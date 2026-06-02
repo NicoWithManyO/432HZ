@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from django.core.validators import MaxValueValidator
 from django.db import models
 
@@ -143,6 +145,23 @@ class SocialLink(UUIDModel):
     n'accepte que http(s)/ftp(s) (donc pas de `javascript:`). Chaque lien s'affiche
     indépendamment sur la page Contact et/ou dans le footer (les deux par défaut)."""
 
+    # Domaine connu → slug d'icône (cf sprite SVG local, repli « link » sinon). Les
+    # sous-domaines sont couverts (ex. open.spotify.com, artiste.bandcamp.com).
+    ICON_DOMAINS = {
+        "instagram.com": "instagram",
+        "facebook.com": "facebook",
+        "fb.com": "facebook",
+        "soundcloud.com": "soundcloud",
+        "youtube.com": "youtube",
+        "youtu.be": "youtube",
+        "twitter.com": "x",
+        "x.com": "x",
+        "tiktok.com": "tiktok",
+        "bandcamp.com": "bandcamp",
+        "spotify.com": "spotify",
+        "linkedin.com": "linkedin",
+    }
+
     label = models.CharField(max_length=60)
     url = models.URLField()
     show_on_page = models.BooleanField(default=True)  # bloc « Réseaux » de la page Contact
@@ -154,6 +173,15 @@ class SocialLink(UUIDModel):
 
     def __str__(self):
         return self.label
+
+    @property
+    def icon(self):
+        """Slug d'icône déduit du domaine de l'URL (repli « link » si inconnu)."""
+        host = (urlsplit(self.url).hostname or "").lower()
+        for domain, slug in self.ICON_DOMAINS.items():
+            if host == domain or host.endswith("." + domain):
+                return slug
+        return "link"
 
 
 class MentionsContent(SingletonModel, SanitizedHTMLModel, UUIDModel):

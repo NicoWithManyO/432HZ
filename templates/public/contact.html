@@ -22,7 +22,7 @@
         <h2 class="font-mono uppercase tracking-[.12em] text-[.72rem] text-red font-bold">{{ contact.networks_title }}</h2>
         <ul class="mt-4 space-y-[10px]">
           {% for link in social_links %}
-          <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a></li>
+          {% include "public/_social_link.html" %}
           {% endfor %}
         </ul>
       </div>

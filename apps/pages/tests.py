@@ -487,6 +487,46 @@ def test_social_link_page_and_footer_toggles_are_independent(client):
     assert "https://p.test/" not in footer_html
 
 
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://www.instagram.com/432hz", "instagram"),
+        ("https://instagram.com/432hz", "instagram"),
+        ("https://facebook.com/432hz", "facebook"),
+        ("https://soundcloud.com/432hz", "soundcloud"),
+        ("https://www.youtube.com/@432hz", "youtube"),
+        ("https://youtu.be/abc", "youtube"),
+        ("https://twitter.com/432hz", "x"),
+        ("https://x.com/432hz", "x"),
+        ("https://www.tiktok.com/@432hz", "tiktok"),
+        ("https://432hz.bandcamp.com/", "bandcamp"),  # sous-domaine
+        ("https://open.spotify.com/artist/abc", "spotify"),  # sous-domaine
+        ("https://www.linkedin.com/company/432hz", "linkedin"),
+        ("https://example.com/whatever", "link"),  # inconnu → repli
+        ("", "link"),  # url vide → repli
+    ],
+)
+def test_social_link_icon_slug_from_domain(url, expected):
+    # L'icône est déduite du domaine de l'URL (sous-domaines inclus), repli « link ».
+    assert SocialLink(label="x", url=url).icon == expected
+
+
+@pytest.mark.django_db
+def test_social_links_render_icon_sprite_reference(client):
+    # L'icône locale est rendue via <use href="#i-<slug>"> sur la page Contact et dans le footer.
+    SocialLink.objects.all().delete()
+    SocialLink.objects.create(label="Insta", url="https://instagram.com/432hz")
+    SocialLink.objects.create(label="Perso", url="https://example.com/")  # inconnu → repli
+
+    contact_html = client.get(reverse("contact")).content.decode()
+    assert 'href="#i-instagram"' in contact_html
+    assert 'href="#i-link"' in contact_html  # repli domaine inconnu
+    assert 'id="i-instagram"' in contact_html  # sprite inclus une fois via base.html
+
+    footer_html = client.get(reverse("home")).content.decode()
+    assert 'href="#i-instagram"' in footer_html
+
+
 @pytest.mark.django_db
 def test_mentions_page_renders_seeded_content(client):
     # Après bascule template→base : le rendu reprend les textes d'origine + les titres

@@ -1,0 +1,8 @@
+{% comment %}Un lien de réseau : icône locale (cf sprite _social_icons_sprite.html) + label.
+Attend `link` dans le contexte. Markup partagé entre la page Contact et le footer.{% endcomment %}
+<li>
+  <a class="inline-flex items-center gap-2 border-b border-transparent hover:border-red transition-colors py-0.5" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+    <svg class="w-[1.05em] h-[1.05em] shrink-0" fill="currentColor" aria-hidden="true" focusable="false"><use href="#i-{{ link.icon }}"/></svg>
+    <span>{{ link.label }}</span>
+  </a>
+</li>
