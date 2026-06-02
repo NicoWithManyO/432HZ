@@ -21,12 +21,14 @@ from apps.events.models import Event
 from apps.gestion.forms import (
     AssoContentForm,
     CallToActionForm,
+    ContactContentForm,
     EventForm,
     HomeContentForm,
     InvitationForm,
     KeyFigureForm,
     MissionForm,
     NewsForm,
+    SocialLinkForm,
     TickerItemForm,
 )
 from apps.media.forms import ImageMetaForm, ImageUploadForm
@@ -35,9 +37,11 @@ from apps.news.models import News
 from apps.pages.models import (
     AssoContent,
     CallToAction,
+    ContactContent,
     HomeContent,
     KeyFigure,
     Mission,
+    SocialLink,
     TickerItem,
 )
 
@@ -65,6 +69,11 @@ class DashboardView(ValidatedRequiredMixin, TemplateView):
         )
         context["asso_ctas_list"] = self._ordered_list_ctx(
             "asso-cta", CallToAction.objects.filter(page=CallToAction.ASSO)
+        )
+        # Onglet Contact
+        context["contact_form"] = ContactContentForm(instance=ContactContent.load())
+        context["social_links_list"] = self._ordered_list_ctx(
+            "social-link", SocialLink.objects.all()
         )
         return context
 
@@ -174,6 +183,18 @@ class AssoContentUpdateView(ValidatedRequiredMixin, View):
         return redirect(_dashboard_tab_url("asso"))
 
 
+class ContactContentUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        form = ContactContentForm(request.POST, instance=ContactContent.load())
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Textes de la page Contact enregistrés.")
+        else:
+            # PRG : on redirige, donc on signale l'échec via les messages (sinon perdu).
+            messages.error(request, "Textes non enregistrés :\n" + form.errors.as_text())
+        return redirect(_dashboard_tab_url("contact"))
+
+
 # --- CRUD générique de listes ordonnées (missions, chiffres-clés, …) ---
 
 # Registre : une clé d'URL → modèle édité, form d'ajout, onglet de retour, et `scope`
@@ -191,6 +212,7 @@ ORDERED_LISTS = {
         "model": CallToAction, "form": CallToActionForm, "tab": "asso",
         "scope": {"page": CallToAction.ASSO},
     },
+    "social-link": {"model": SocialLink, "form": SocialLinkForm, "tab": "contact"},
 }
 
 

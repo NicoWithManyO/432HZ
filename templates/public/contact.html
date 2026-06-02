@@ -6,29 +6,24 @@
 {% block content %}
 <section class="py-[var(--section-y)]">
   <div class="wrap max-w-[880px]">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">Nous écrire</p>
-    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">Contact</h1>
+    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-red font-bold">{{ contact.kicker }}</p>
+    <h1 class="font-display font-black text-[clamp(1.9rem,5vw,3.1rem)] leading-none tracking-[-.01em] mt-2">{{ contact.title }}</h1>
 
-    <div class="prose mt-8">
-      <p>Une question, une proposition de collaboration, l'envie de filer un coup de main ? Écris-nous,
-        on répond à toutes et tous.</p>
-    </div>
+    <div class="prose mt-8">{{ contact.intro|safe }}</div>
 
     <div class="grid grid-cols-1 min-[640px]:grid-cols-2 gap-[clamp(20px,2.6vw,30px)] mt-9">
-      {# Coordonnées. TODO: renseigner email et adresse réels. #}
       <div class="border-2 border-ink bg-paper-2 p-[clamp(26px,3.4vw,38px)]">
-        <h2 class="font-mono uppercase tracking-[.12em] text-[.72rem] text-red font-bold">Coordonnées</h2>
-        <p class="mt-4"><a href="mailto:contact@432hz.fr" class="border-b-2 border-red pb-0.5 hover:bg-red hover:text-paper transition">contact@432hz.fr</a></p>{# TODO: email réel #}
-        <p class="text-ink-soft text-[.92rem] mt-3">{# TODO: adresse postale #}Annecy, Haute-Savoie</p>
+        <h2 class="font-mono uppercase tracking-[.12em] text-[.72rem] text-red font-bold">{{ contact.coordinates_title }}</h2>
+        <p class="mt-4"><a href="mailto:{{ contact.email }}" class="border-b-2 border-red pb-0.5 hover:bg-red hover:text-paper transition">{{ contact.email }}</a></p>
+        <p class="text-ink-soft text-[.92rem] mt-3">{{ contact.address }}</p>
       </div>
 
-      {# Réseaux. TODO: URLs réelles des comptes. #}
       <div class="border-2 border-ink bg-paper-2 p-[clamp(26px,3.4vw,38px)]">
-        <h2 class="font-mono uppercase tracking-[.12em] text-[.72rem] text-red font-bold">Réseaux</h2>
+        <h2 class="font-mono uppercase tracking-[.12em] text-[.72rem] text-red font-bold">{{ contact.networks_title }}</h2>
         <ul class="mt-4 space-y-[10px]">
-          <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
-          <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">Facebook</a></li>
-          <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="https://soundcloud.com/" target="_blank" rel="noopener noreferrer">SoundCloud</a></li>
+          {% for link in social_links %}
+          <li><a class="border-b border-transparent hover:border-red transition-colors py-0.5" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a></li>
+          {% endfor %}
         </ul>
       </div>
     </div>

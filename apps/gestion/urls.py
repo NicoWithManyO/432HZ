@@ -31,6 +31,12 @@ urlpatterns = [
     path("bandeau/<uuid:pk>/deplacer/", views.TickerItemMoveView.as_view(), name="ticker-move"),
     # Contenu page L'asso (textes) + listes ordonnées génériques (missions, chiffres, …)
     path("asso/textes/", views.AssoContentUpdateView.as_view(), name="asso-content-update"),
+    # Contenu page Contact (textes & coordonnées) — réseaux via les listes génériques
+    path(
+        "contact/textes/",
+        views.ContactContentUpdateView.as_view(),
+        name="contact-content-update",
+    ),
     path(
         "listes/<str:key>/ajouter/",
         views.OrderedListCreateView.as_view(),

@@ -10,9 +10,11 @@ from apps.news.models import News
 from apps.pages.models import (
     AssoContent,
     CallToAction,
+    ContactContent,
     HomeContent,
     KeyFigure,
     Mission,
+    SocialLink,
     TickerItem,
 )
 
@@ -213,3 +215,30 @@ class KeyFigureForm(forms.ModelForm):
     class Meta:
         model = KeyFigure
         fields = ["text"]
+
+
+class ContactContentForm(forms.ModelForm):
+    """Édition des textes et coordonnées de la page Contact (intro en HTML léger via
+    l'éditeur riche)."""
+
+    class Meta:
+        model = ContactContent
+        fields = [
+            "kicker", "title", "intro", "coordinates_title", "email", "address",
+            "networks_title",
+        ]
+        widgets = {
+            "intro": forms.Textarea(attrs={"rows": 4, "data-richtext": True}),
+        }
+
+
+class SocialLinkForm(forms.ModelForm):
+    """Ajout d'un lien de réseau social (l'ordre est posé par la vue)."""
+
+    # `assume_scheme="https"` : schéma par défaut d'une URL sans protocole (et défaut
+    # explicite de Django 6.0 → silence le warning de transition).
+    url = forms.URLField(assume_scheme="https", max_length=200)
+
+    class Meta:
+        model = SocialLink
+        fields = ["label", "url"]

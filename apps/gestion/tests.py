@@ -19,9 +19,11 @@ from apps.news.models import News
 from apps.pages.models import (
     AssoContent,
     CallToAction,
+    ContactContent,
     HomeContent,
     KeyFigure,
     Mission,
+    SocialLink,
     TickerItem,
 )
 
@@ -539,8 +541,9 @@ def test_dashboard_renders_tabs_and_accordions(validated_client):
         assert f'aria-controls="panel-{slug}"' in html
         assert f'id="panel-{slug}"' in html
     # Accordéons repliables : 3 sur l'accueil (Hero + Bandeau + Boutons) + 4 sur L'asso
-    # (Textes + Missions + Chiffres-clés + Boutons).
-    assert html.count('class="gestion-accordion"') == 7
+    # (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes & coordonnées
+    # + Réseaux).
+    assert html.count('class="gestion-accordion"') == 9
 
 
 # --- Contenu page L'asso : singleton + sanitize + édition ---
@@ -607,6 +610,76 @@ def test_asso_content_update_invalid_surfaces_error(validated_client):
         follow=True,
     )
     assert "non enregistrés" in response.content.decode()
+
+
+# --- Contenu page Contact : singleton + sanitize + édition ---
+
+
+@pytest.mark.django_db
+def test_contact_content_is_singleton():
+    # Le seed pose déjà l'unique ligne ; toute sauvegarde « neuve » la met à jour.
+    assert ContactContent.objects.count() == 1
+    ContactContent(
+        kicker="K", title="T", intro="<p>x</p>", coordinates_title="C",
+        email="a@b.fr", address="A", networks_title="N",
+    ).save()
+    assert ContactContent.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_contact_content_sanitizes_intro_on_save():
+    contact = ContactContent.load()
+    contact.intro = "<p>ok</p><script>alert(1)</script>"
+    contact.save()
+    contact.refresh_from_db()
+    assert "<script>" not in contact.intro
+    assert "alert(1)" not in contact.intro
+    assert "<p>ok</p>" in contact.intro
+
+
+@pytest.mark.django_db
+def test_contact_content_update(validated_client):
+    response = validated_client.post(
+        reverse("gestion:contact-content-update"),
+        {
+            "kicker": "Écris-nous",
+            "title": "Contact",
+            "intro": "<p>Nouvelle intro.</p>",
+            "coordinates_title": "Coordonnées",
+            "email": "hello@432hz.fr",
+            "address": "Annecy",
+            "networks_title": "Réseaux",
+        },
+        follow=True,
+    )
+    contact = ContactContent.load()
+    assert contact.kicker == "Écris-nous"
+    assert contact.email == "hello@432hz.fr"
+    assert "page Contact" in response.content.decode()
+    assert "enregistrés" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_contact_content_update_invalid_surfaces_error(validated_client):
+    response = validated_client.post(
+        reverse("gestion:contact-content-update"),
+        {"kicker": "", "title": "", "intro": "", "coordinates_title": "",
+         "email": "pas-un-email", "address": "", "networks_title": ""},
+        follow=True,
+    )
+    assert "non enregistrés" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_social_link_create_appends_at_end(validated_client):
+    SocialLink.objects.all().delete()
+    SocialLink.objects.create(label="Insta", url="https://instagram.com/", order=0)
+    validated_client.post(
+        reverse("gestion:list-create", args=["social-link"]),
+        {"social-link-new-label": "Bandcamp", "social-link-new-url": "https://bandcamp.com/"},
+    )
+    created = SocialLink.objects.get(label="Bandcamp")
+    assert created.order == 1
 
 
 # --- CRUD générique de listes ordonnées (missions, chiffres-clés) ---

@@ -138,10 +138,31 @@
 </div>
 
 <div id="panel-contact" role="tabpanel" aria-labelledby="tab-contact" tabindex="0">
-  <div class="border-2 border-dashed border-line p-[clamp(20px,4vw,40px)] text-center">
-    <p class="font-mono uppercase tracking-[.14em] text-[.72rem] text-muted mb-2">À venir</p>
-    <p class="text-ink-soft">L'édition du contenu de la page « Contact » sera disponible prochainement.</p>
-  </div>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Textes &amp; coordonnées</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Bandeau, titre, intro, e-mail et adresse de contact.</p>
+      <form method="post" action="{% url 'gestion:contact-content-update' %}" class="gestion-form flex flex-col gap-4">
+        {% csrf_token %}
+        {{ contact_form.as_p }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+      </form>
+    </div>
+  </details>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Réseaux</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les liens vers les réseaux sociaux de l'asso.</p>
+      {% include "gestion/_ordered_list.html" with items=social_links_list.items add_form=social_links_list.add_form list_key=social_links_list.key empty_text="Aucun réseau." %}
+    </div>
+  </details>
+
 </div>
 
 <div id="panel-mentions" role="tabpanel" aria-labelledby="tab-mentions" tabindex="0">

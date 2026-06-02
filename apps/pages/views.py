@@ -10,7 +10,15 @@ from easy_thumbnails.files import get_thumbnailer
 from apps.common.models import SlugHistory
 from apps.events.models import Event, EventImage
 from apps.news.models import News, NewsImage
-from apps.pages.models import AssoContent, CallToAction, HomeContent, KeyFigure, Mission
+from apps.pages.models import (
+    AssoContent,
+    CallToAction,
+    ContactContent,
+    HomeContent,
+    KeyFigure,
+    Mission,
+    SocialLink,
+)
 from apps.pages.templatetags.pages import plain_excerpt
 
 
@@ -217,6 +225,12 @@ class AdhererView(TemplateView):
 
 class ContactView(TemplateView):
     template_name = "public/contact.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["contact"] = ContactContent.load()
+        context["social_links"] = SocialLink.objects.all()
+        return context
 
 
 class MentionsView(TemplateView):

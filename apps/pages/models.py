@@ -113,3 +113,36 @@ class KeyFigure(UUIDModel):
 
     def __str__(self):
         return self.text
+
+
+class ContactContent(SingletonModel, SanitizedHTMLModel, UUIDModel):
+    """Singleton : contenu textuel de la page « Contact » (structure figée au template,
+    seul le contenu est éditable). L'intro est du HTML léger sanitizé."""
+
+    kicker = models.CharField(max_length=80)
+    title = models.CharField(max_length=120)
+    intro = models.TextField()
+    coordinates_title = models.CharField(max_length=80)
+    email = models.EmailField()
+    address = models.CharField(max_length=200)
+    networks_title = models.CharField(max_length=80)
+
+    RICH_TEXT_FIELDS = ("intro",)
+
+    def __str__(self):
+        return self.title
+
+
+class SocialLink(UUIDModel):
+    """Un lien de réseau social affiché sur la page Contact. Le lien est rendu tel quel
+    dans un href : `URLField` n'accepte que http(s)/ftp(s) (donc pas de `javascript:`)."""
+
+    label = models.CharField(max_length=60)
+    url = models.URLField()
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.label

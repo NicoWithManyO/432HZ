@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
 from apps.news.models import News
-from apps.pages.models import CallToAction, HomeContent, TickerItem
+from apps.pages.models import CallToAction, HomeContent, SocialLink, TickerItem
 from apps.pages.punchline import render_punchline
 
 
@@ -378,3 +378,28 @@ def test_asso_page_renders_seeded_content(client):
     # CTA toujours présent, pointant vers la destination configurée (Adhérer par défaut).
     assert "Rejoindre l&#x27;asso" in html
     assert 'href="/adherer/"' in html
+
+
+@pytest.mark.django_db
+def test_contact_page_renders_seeded_content(client):
+    # Après bascule template→base : le rendu reprend mot pour mot les textes d'origine.
+    response = client.get(reverse("contact"))
+    html = response.content.decode()
+    assert "Nous écrire" in html  # kicker
+    assert "Une question, une proposition de collaboration" in html
+    assert 'href="mailto:contact@432hz.fr"' in html
+    assert "Annecy, Haute-Savoie" in html
+    # Les 3 réseaux seedés (via le contexte : le footer liste les mêmes libellés en dur).
+    labels = [link.label for link in response.context["social_links"]]
+    assert labels == ["Instagram", "Facebook", "SoundCloud"]
+
+
+@pytest.mark.django_db
+def test_contact_social_links_are_free(client):
+    # Liste libre : on peut tout supprimer (bloc réseaux vide sans casser la page).
+    # NB : le footer de base.html liste les mêmes réseaux en dur → on vérifie via le
+    # contexte (la donnée de la page), pas le HTML pollué par le footer.
+    SocialLink.objects.all().delete()
+    response = client.get(reverse("contact"))
+    assert response.status_code == 200
+    assert list(response.context["social_links"]) == []
