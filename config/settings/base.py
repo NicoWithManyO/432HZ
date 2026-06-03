@@ -7,6 +7,7 @@ Secrets et options dépendantes de l'environnement sont lus via python-decouple
 
 from pathlib import Path
 
+from csp.constants import NONE, SELF
 from decouple import config
 
 # Racine du dépôt (config/settings/base.py -> remonte de 3 niveaux).
@@ -40,17 +41,59 @@ INSTALLED_APPS = [
     "apps.gestion",
     # Vignettes WebP/srcset (médiathèque)
     "easy_thumbnails",
+    # Throttling des tentatives de connexion (cf section sécurité plus bas)
+    "axes",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "csp.middleware.CSPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # AxesMiddleware en dernier (a besoin de request.user résolu en amont).
+    "axes.middleware.AxesMiddleware",
 ]
+
+
+# Content-Security-Policy (django-csp). Posée par Django, pas par Nginx (cf DEPLOY-BRIEF).
+# Inventaire du site : seul `main.js` (type=module, self) + du JSON-LD non exécutable, et
+# TipTap minifié sans eval → `script-src 'self'` sans unsafe-* (la protection critique reste
+# stricte). En revanche TipTap injecte sa feuille de style à l'exécution (<style> créé en JS,
+# bloqué par `style-src 'self'`) → `style-src` autorise `'unsafe-inline'`. Risque résiduel
+# négligeable : le contenu public est sanitizé par nh3 (aucun attribut `style` admis), donc
+# aucune CSS contrôlée par un tiers ne peut atteindre les pages. Les embeds vidéo/adhésion
+# sont en click-to-load → `frame-src` restreint aux hôtes attendus. Les aperçus d'upload
+# (dropzone, URL.createObjectURL) produisent des `blob:` → `img-src` les autorise.
+_CSP_DIRECTIVES = {
+    "default-src": [SELF],
+    "script-src": [SELF],
+    "style-src": [SELF, "'unsafe-inline'"],
+    "img-src": [SELF, "data:", "blob:"],
+    "font-src": [SELF],
+    "media-src": [SELF],
+    "connect-src": [SELF],
+    "frame-src": [
+        SELF,
+        "https://www.youtube-nocookie.com",
+        "https://player.vimeo.com",
+        "https://www.helloasso.com",
+    ],
+    "frame-ancestors": [NONE],
+    "base-uri": [SELF],
+    "form-action": [SELF],
+    "object-src": [NONE],
+}
+
+# Bascule report-only (observer les violations sans bloquer) pilotée par env : django-csp
+# 4.x lit deux réglages distincts selon le mode.
+if config("DJANGO_CSP_REPORT_ONLY", default=False, cast=bool):
+    CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": _CSP_DIRECTIVES}
+else:
+    CONTENT_SECURITY_POLICY = {"DIRECTIVES": _CSP_DIRECTIVES}
 
 ROOT_URLCONF = "config.urls"
 
@@ -105,6 +148,33 @@ PASSWORD_HASHERS = [
 LOGIN_URL = "gestion:login"
 LOGIN_REDIRECT_URL = "gestion:dashboard"
 LOGOUT_REDIRECT_URL = "gestion:login"
+
+
+# Rate-limiting (cf cahier §11). Deux outils complémentaires :
+#  - django-axes : throttle les tentatives de connexion. Stockage en base (survit au
+#    redémarrage, indépendant du nombre de workers gunicorn).
+#  - django-ratelimit : protège l'acceptation d'invitation et les uploads. S'appuie sur le
+#    CACHES ci-dessous (LocMemCache, mémoire de process) → garder `--workers 1` (cf
+#    HANDOFF-DEVOPS.md). Désactivable en test via RATELIMIT_ENABLE (cf conftest.py).
+
+AUTHENTICATION_BACKENDS = [
+    # AxesStandaloneBackend en tête : court-circuite l'auth si le couple est verrouillé.
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # heure(s) avant déverrouillage automatique
+# Verrou sur le couple (identifiant + IP) : ni DoS d'un compte par son seul nom, ni blocage
+# de toute une IP partagée.
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
 
 
 # Validation des mots de passe

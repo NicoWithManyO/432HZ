@@ -774,3 +774,23 @@ def test_home_video_embed_uses_click_to_load_not_iframe(client):
     # L'iframe n'est PAS dans le HTML servi (chargée au clic) ; data-src = nocookie.
     assert "<iframe" not in html
     assert "youtube-nocookie.com/embed/dQw4w9WgXcQ" in html
+
+
+# --- En-tête Content-Security-Policy (django-csp, posé sur toute réponse) ---
+
+
+@pytest.mark.django_db
+def test_response_sets_csp_header(client):
+    # La CSP est posée par le middleware sur toute réponse (testée dès le dev).
+    csp = client.get(reverse("home")).headers.get("Content-Security-Policy", "")
+    assert "default-src 'self'" in csp
+    assert "object-src 'none'" in csp
+    assert "frame-ancestors 'none'" in csp
+    # script-src reste strict (protection critique) ; style-src tolère l'inline car TipTap
+    # injecte sa feuille de style en JS (cf base.py). On verrouille les deux décisions.
+    assert "script-src 'self'" in csp
+    assert "style-src 'self' 'unsafe-inline'" in csp
+    # Hôtes d'embed autorisés (click-to-load vidéo) et blob: pour les aperçus d'upload.
+    assert "https://www.youtube-nocookie.com" in csp
+    assert "https://player.vimeo.com" in csp
+    assert "blob:" in csp

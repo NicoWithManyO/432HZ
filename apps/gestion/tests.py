@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
@@ -999,3 +1000,18 @@ def test_home_media_update_uploads_video(validated_client, settings, tmp_path):
     hm = HomeMedia.load()
     assert hm.mode == HomeMedia.VIDEO
     assert hm.video_file.name.endswith(".mp4")
+
+
+# --- Rate-limiting des uploads (P5) ---
+
+
+@pytest.mark.django_db
+def test_upload_view_is_rate_limited(validated_client, settings):
+    # django-ratelimit (réactivé ici, cf conftest) : 60 POST/h par utilisateur, le 61e → 403.
+    # Un POST sans fichier (form invalide → 400) suffit à incrémenter le compteur.
+    settings.RATELIMIT_ENABLE = True
+    cache.clear()
+    url = reverse("gestion:media-quick-upload")
+    for _ in range(60):
+        validated_client.post(url, {})
+    assert validated_client.post(url, {}).status_code == 403

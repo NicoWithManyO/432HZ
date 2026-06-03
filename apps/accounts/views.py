@@ -2,6 +2,7 @@ from django.contrib.auth import login
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django_ratelimit.decorators import ratelimit
 
 from .forms import InvitationAcceptForm
 from .models import EDITOR, Invitation, Profile
@@ -10,6 +11,8 @@ from .models import EDITOR, Invitation, Profile
 _AUTH_BACKEND = "django.contrib.auth.backends.ModelBackend"
 
 
+# Throttle par IP : freine le martèlement de tokens d'invitation (création de compte).
+@ratelimit(key="ip", rate="10/h", method="POST", block=True)
 def accept_invitation(request, token):
     """Acceptation d'une invitation : crée un éditeur validé et le connecte."""
     invitation = Invitation.objects.filter(token=token).first()

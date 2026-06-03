@@ -3,8 +3,10 @@ from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
@@ -106,3 +108,30 @@ def test_edit_lock_is_active_while_heartbeat_recent():
     # Heartbeat ancien (> 2 min) → verrou considéré relâché.
     lock.heartbeat_at = timezone.now() - timedelta(minutes=5)
     assert not lock.is_active
+
+
+# --- Rate-limiting (P5) ---
+
+
+@pytest.mark.django_db
+def test_login_locks_out_after_repeated_failures(client, settings):
+    # django-axes verrouille le couple (identifiant + IP) après AXES_FAILURE_LIMIT échecs.
+    get_user_model().objects.create_user(username="bob", password=PASSWORD)
+    url = reverse("gestion:login")
+    for _ in range(settings.AXES_FAILURE_LIMIT):
+        client.post(url, {"username": "bob", "password": "mauvais"})
+    # Verrou atteint : même la bonne combinaison est refusée (429 par défaut d'axes).
+    locked = client.post(url, {"username": "bob", "password": PASSWORD})
+    assert locked.status_code == 429
+
+
+@pytest.mark.django_db
+def test_accept_invitation_post_is_rate_limited(client, settings):
+    # django-ratelimit (réactivé ici, cf conftest) : 10 POST/h par IP, le 11e → 403.
+    settings.RATELIMIT_ENABLE = True
+    cache.clear()
+    inv = Invitation.objects.create()
+    url = reverse("gestion:accept-invitation", args=[inv.token])
+    for _ in range(10):
+        client.post(url, {})  # form vide → re-render 200, mais décompté
+    assert client.post(url, {}).status_code == 403

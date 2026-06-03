@@ -4,6 +4,7 @@ from django.db.models import Max, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import (
     CreateView,
@@ -12,6 +13,7 @@ from django.views.generic import (
     TemplateView,
     UpdateView,
 )
+from django_ratelimit.decorators import ratelimit
 from easy_thumbnails.files import get_thumbnailer
 
 from apps.accounts.models import Invitation, Profile
@@ -49,6 +51,16 @@ from apps.pages.models import (
     SocialLink,
     TickerItem,
 )
+
+
+class RateLimitedUploadMixin:
+    """Throttle des vues acceptant un upload : borne les POST par utilisateur (garde-fou
+    anti-emballement ou compte compromis). Au-delà du quota → 403. À placer APRÈS le mixin
+    d'auth dans les bases (l'auth résout `request.user` avant le décompte par utilisateur)."""
+
+    @method_decorator(ratelimit(key="user", rate="60/h", method="POST", block=True))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
 
 class DashboardView(ValidatedRequiredMixin, TemplateView):
@@ -135,7 +147,7 @@ class HomeDisplayUpdateView(ValidatedRequiredMixin, View):
         return redirect("gestion:dashboard")
 
 
-class HomeMediaUpdateView(ValidatedRequiredMixin, View):
+class HomeMediaUpdateView(ValidatedRequiredMixin, RateLimitedUploadMixin, View):
     def post(self, request):
         # request.FILES : indispensable pour récupérer la vidéo téléversée.
         form = HomeMediaForm(request.POST, request.FILES, instance=HomeMedia.load())
@@ -369,7 +381,7 @@ class MediaListView(ValidatedRequiredMixin, ListView):
     paginate_by = 24
 
 
-class ImageUploadView(ValidatedRequiredMixin, CreateView):
+class ImageUploadView(ValidatedRequiredMixin, RateLimitedUploadMixin, CreateView):
     model = Image
     form_class = ImageUploadForm
     template_name = "gestion/media/form.html"
@@ -407,7 +419,7 @@ class ImageDeleteView(ValidatedRequiredMixin, DeleteView):
         return context
 
 
-class ImageQuickUploadView(ValidatedRequiredMixin, View):
+class ImageQuickUploadView(ValidatedRequiredMixin, RateLimitedUploadMixin, View):
     """Upload AJAX d'une image depuis un formulaire event/actu : crée le média (donc il
     rejoint la médiathèque) et renvoie son id + sa vignette, pour que le picker l'ajoute à
     la galerie sans quitter la page. Même validation serveur que l'upload classique."""
@@ -475,14 +487,14 @@ class EventListView(ValidatedRequiredMixin, ListView):
         return context
 
 
-class EventCreateView(GallerySaveMixin, ValidatedRequiredMixin, CreateView):
+class EventCreateView(GallerySaveMixin, ValidatedRequiredMixin, RateLimitedUploadMixin, CreateView):
     model = Event
     form_class = EventForm
     template_name = "gestion/events/form.html"
     success_url = reverse_lazy("gestion:event-list")
 
 
-class EventUpdateView(GallerySaveMixin, ValidatedRequiredMixin, UpdateView):
+class EventUpdateView(GallerySaveMixin, ValidatedRequiredMixin, RateLimitedUploadMixin, UpdateView):
     model = Event
     form_class = EventForm
     template_name = "gestion/events/form.html"
@@ -530,14 +542,14 @@ class NewsListView(ValidatedRequiredMixin, ListView):
         return context
 
 
-class NewsCreateView(GallerySaveMixin, ValidatedRequiredMixin, CreateView):
+class NewsCreateView(GallerySaveMixin, ValidatedRequiredMixin, RateLimitedUploadMixin, CreateView):
     model = News
     form_class = NewsForm
     template_name = "gestion/news/form.html"
     success_url = reverse_lazy("gestion:news-list")
 
 
-class NewsUpdateView(GallerySaveMixin, ValidatedRequiredMixin, UpdateView):
+class NewsUpdateView(GallerySaveMixin, ValidatedRequiredMixin, RateLimitedUploadMixin, UpdateView):
     model = News
     form_class = NewsForm
     template_name = "gestion/news/form.html"

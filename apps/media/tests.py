@@ -119,6 +119,95 @@ def test_home_media_field_carries_video_validator():
     assert validate_video_file in HomeMedia._meta.get_field("video_file").validators
 
 
+# --- Ré-encodage à l'upload (P5) ---
+
+
+@pytest.mark.django_db
+def test_save_strips_exif_metadata(settings, tmp_path):
+    # Un EXIF embarqué (ex. géolocalisation, légende) ne doit pas survivre à l'upload.
+    settings.MEDIA_ROOT = tmp_path
+    exif = PILImage.Exif()
+    exif[0x010E] = "Légende secrète"  # ImageDescription
+    buffer = io.BytesIO()
+    PILImage.new("RGB", (64, 64), "red").save(buffer, format="JPEG", exif=exif)
+    upload = SimpleUploadedFile("p.jpg", buffer.getvalue(), content_type="image/jpeg")
+
+    image = Image.objects.create(file=upload)
+
+    image.refresh_from_db()
+    with image.file.open("rb") as fh, PILImage.open(fh) as stored:
+        assert 0x010E not in stored.getexif()
+
+
+@pytest.mark.django_db
+def test_save_drops_appended_bytes(settings, tmp_path):
+    # Polyglotte : des octets greffés après une image valide doivent disparaître.
+    settings.MEDIA_ROOT = tmp_path
+    buffer = io.BytesIO()
+    PILImage.new("RGB", (64, 64), "red").save(buffer, format="PNG")
+    payload = buffer.getvalue() + b"<?php evil(); ?>"
+    upload = SimpleUploadedFile("p.png", payload, content_type="image/png")
+
+    image = Image.objects.create(file=upload)
+
+    image.refresh_from_db()
+    with image.file.open("rb") as fh:
+        assert b"<?php" not in fh.read()
+
+
+@pytest.mark.django_db
+def test_save_applies_exif_orientation(settings, tmp_path):
+    # Photo avec orientation EXIF (typique d'un téléphone) : on redresse les pixels à
+    # l'upload, sinon — l'EXIF étant retiré — l'image s'afficherait de travers.
+    settings.MEDIA_ROOT = tmp_path
+    exif = PILImage.Exif()
+    exif[0x0112] = 6  # Orientation = rotation 90° → largeur/hauteur échangées à l'affichage
+    buffer = io.BytesIO()
+    PILImage.new("RGB", (40, 20), "red").save(buffer, format="JPEG", exif=exif)
+    upload = SimpleUploadedFile("p.jpg", buffer.getvalue(), content_type="image/jpeg")
+
+    image = Image.objects.create(file=upload)
+
+    image.refresh_from_db()
+    with image.file.open("rb") as fh, PILImage.open(fh) as stored:
+        assert stored.size == (20, 40)  # pixels redressés
+        assert 0x0112 not in stored.getexif()  # tag d'orientation retiré
+
+
+@pytest.mark.django_db
+def test_save_preserves_format(settings, tmp_path):
+    # Le ré-encodage conserve le format d'origine (PNG reste PNG).
+    settings.MEDIA_ROOT = tmp_path
+    image = Image.objects.create(file=make_image_file(name="p.png", fmt="PNG"))
+
+    image.refresh_from_db()
+    with image.file.open("rb") as fh, PILImage.open(fh) as stored:
+        assert stored.format == "PNG"
+
+
+@pytest.mark.django_db
+def test_metadata_edit_does_not_reprocess_stored_file(settings, tmp_path):
+    # Une édition de métadonnées ne doit pas ré-encoder ni réécrire le fichier stocké.
+    settings.MEDIA_ROOT = tmp_path
+    image = Image.objects.create(file=make_image_file())
+    image.refresh_from_db()
+    stored_name = image.file.name
+    with image.file.open("rb") as fh:
+        original = fh.read()
+
+    form = ImageMetaForm(
+        data={"alt": "Affiche", "title": "Concert", "caption": "Ouverture"},
+        instance=image,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    image.refresh_from_db()
+    assert image.file.name == stored_name  # pas de nouvelle écriture
+    with image.file.open("rb") as fh:
+        assert fh.read() == original  # octets inchangés
+
+
 @pytest.mark.django_db
 def test_upload_form_saves_valid_image():
     form = ImageUploadForm(
