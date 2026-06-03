@@ -25,6 +25,7 @@ from apps.gestion.forms import (
     EventForm,
     HomeContentForm,
     HomeDisplayForm,
+    HomeMediaForm,
     InvitationForm,
     KeyFigureForm,
     MentionsContentForm,
@@ -41,6 +42,7 @@ from apps.pages.models import (
     CallToAction,
     ContactContent,
     HomeContent,
+    HomeMedia,
     KeyFigure,
     MentionsContent,
     Mission,
@@ -66,6 +68,8 @@ class DashboardView(ValidatedRequiredMixin, TemplateView):
         context["home_ctas_list"] = self._ordered_list_ctx(
             "home-cta", CallToAction.objects.filter(page=CallToAction.HOME)
         )
+        context["home_media_form"] = HomeMediaForm(instance=HomeMedia.load())
+        context["available_images"] = Image.objects.all()  # pool du picker de photos
         # Onglet L'asso
         context["asso_form"] = AssoContentForm(instance=AssoContent.load())
         context["missions_list"] = self._ordered_list_ctx("mission", Mission.objects.all())
@@ -129,6 +133,21 @@ class HomeDisplayUpdateView(ValidatedRequiredMixin, View):
         else:
             messages.error(request, "Affichage non enregistré :\n" + form.errors.as_text())
         return redirect("gestion:dashboard")
+
+
+class HomeMediaUpdateView(ValidatedRequiredMixin, View):
+    def post(self, request):
+        # request.FILES : indispensable pour récupérer la vidéo téléversée.
+        form = HomeMediaForm(request.POST, request.FILES, instance=HomeMedia.load())
+        if form.is_valid():
+            # Objet + lignes *through* de la galerie dans une même transaction.
+            with transaction.atomic():
+                obj = form.save()
+                form.save_gallery(obj)
+            messages.success(request, "Bloc média de l'accueil enregistré.")
+        else:
+            messages.error(request, "Bloc média non enregistré :\n" + form.errors.as_text())
+        return redirect(_dashboard_tab_url("accueil"))
 
 
 class TickerItemCreateView(ValidatedRequiredMixin, View):

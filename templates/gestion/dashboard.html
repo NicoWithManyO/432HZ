@@ -90,6 +90,36 @@
 
   <details class="gestion-accordion">
     <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Média</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Le bloc à côté de l'intro : des photos qui défilent, ou une vidéo (fichier ou lien YouTube / Vimeo). « Désactivé » masque le bloc.</p>
+      <form method="post" action="{% url 'gestion:home-media-update' %}" enctype="multipart/form-data"
+            class="gestion-form flex flex-col gap-4" data-home-media>
+        {% csrf_token %}
+        <p>{{ home_media_form.mode.label_tag }}{{ home_media_form.mode }}{{ home_media_form.mode.errors }}</p>
+
+        {# Mode photos : carrousel d'images (réutilise le picker de galerie, sans couverture). #}
+        <div data-media-group="photos">
+          {% include "gestion/_home_media_gallery_field.html" %}
+        </div>
+
+        {# Mode vidéo : choix de la source, puis le champ correspondant + légende. #}
+        <div data-media-group="video" class="flex flex-col gap-4">
+          <p>{{ home_media_form.video_kind.label_tag }}{{ home_media_form.video_kind }}{{ home_media_form.video_kind.errors }}</p>
+          <p data-media-group="video-file">{{ home_media_form.video_file.label_tag }}{{ home_media_form.video_file }}{{ home_media_form.video_file.errors }}</p>
+          <p data-media-group="video-embed">{{ home_media_form.video_url.label_tag }}{{ home_media_form.video_url }}{{ home_media_form.video_url.errors }}</p>
+          <p>{{ home_media_form.video_caption.label_tag }}{{ home_media_form.video_caption }}{{ home_media_form.video_caption.errors }}</p>
+        </div>
+
+        {{ home_media_form.gallery }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
+      </form>
+    </div>
+  </details>
+
+  <details class="gestion-accordion">
+    <summary>
       <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Affichage</h2>
     </summary>
     <div class="gestion-accordion-body">
@@ -216,4 +246,5 @@
 {% block scripts %}
 <script type="module" src="{% static 'js/gestion-tabs.js' %}"></script>
 <script type="module" src="{% static 'js/gestion-editor.js' %}"></script>
+<script type="module" src="{% static 'js/gallery.js' %}"></script>
 {% endblock %}

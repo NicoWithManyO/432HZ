@@ -124,20 +124,20 @@ function mountGallery(container) {
         text.append(caption);
       }
 
-      // Bouton couverture : ★ marqué (rouge plein) / ☆ non marqué.
-      const coverBtn = toolButton(
-        isCover ? "★" : "☆",
-        isCover ? "Couverture (cliquer pour retirer)" : "Définir comme couverture",
-        () => toggleCover(id),
-      );
-      coverBtn.setAttribute("aria-pressed", isCover ? "true" : "false");
-      if (isCover) coverBtn.classList.add("bg-red", "text-paper");
-
+      tile.append(handle, thumb, text);
+      // Bouton couverture : seulement si le formulaire porte un champ « cover » (les
+      // galeries sans couverture, ex. carrousel d'accueil, n'en ont pas). ★/☆.
+      if (coverInput) {
+        const coverBtn = toolButton(
+          isCover ? "★" : "☆",
+          isCover ? "Couverture (cliquer pour retirer)" : "Définir comme couverture",
+          () => toggleCover(id),
+        );
+        coverBtn.setAttribute("aria-pressed", isCover ? "true" : "false");
+        if (isCover) coverBtn.classList.add("bg-red", "text-paper");
+        tile.append(coverBtn);
+      }
       tile.append(
-        handle,
-        thumb,
-        text,
-        coverBtn,
         toolButton("▲", "Monter", () => move(id, -1)),
         toolButton("▼", "Descendre", () => move(id, 1)),
         toolButton("✕", "Retirer", () => toggle(id)),

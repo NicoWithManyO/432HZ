@@ -1,0 +1,79 @@
+{% load thumbnail %}
+{% comment %}
+  Bloc média de l'accueil (à côté de l'intro), piloté par le singleton HomeMedia.
+  `active` (= home_media.is_active, calculé par l'appelant) est l'unique garde
+  d'affichabilité : les branches ci-dessous ne font que dispatcher sur le mode / le type
+  de vidéo, sans re-vérifier la présence du média (source unique de la règle).
+  Trois rendus exclusifs : carrousel de photos, vidéo fichier (<video>) ou vidéo embed
+  YouTube/Vimeo en click-to-load (RGPD). Cadre noir au ratio 4:3 + média en object-contain
+  → portrait comme paysage restent propres (letterbox/pillarbox noir).
+  Le carrousel (data-carousel) et l'embed (data-embed) sont animés par static/js/main.js.
+{% endcomment %}
+{% if active %}
+{% if home_media.mode == "photos" %}
+{% with items=home_media.image_items.all %}
+<figure class="rv"{% if items|length > 1 %} data-carousel data-carousel-auto aria-roledescription="carrousel"{% endif %}>
+  <div class="relative aspect-[4/3] bg-ink border-2 border-ink overflow-hidden">
+    {% for item in items %}
+    <div class="absolute inset-0 transition-opacity duration-700{% if not forloop.first %} opacity-0 pointer-events-none{% endif %}" data-carousel-slide>
+      {% thumbnail item.image.file "960x960" as photo %}
+      <img src="{{ photo.url }}" width="{{ photo.width }}" height="{{ photo.height }}"
+           alt="{{ item.image.alt }}"{% if not forloop.first %} loading="lazy"{% endif %}
+           class="w-full h-full object-contain">
+      {% if item.image.caption %}
+      <figcaption class="absolute left-0 right-0 bottom-0 bg-ink/85 text-paper font-mono text-[.66rem] uppercase tracking-[.08em] px-3 py-2">{{ item.image.caption }}</figcaption>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if items|length > 1 %}
+    <button type="button" data-carousel-prev aria-label="Photo précédente"
+            class="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 grid place-items-center bg-paper text-ink border-2 border-ink font-mono leading-none">‹</button>
+    <button type="button" data-carousel-next aria-label="Photo suivante"
+            class="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 grid place-items-center bg-paper text-ink border-2 border-ink font-mono leading-none">›</button>
+    {% endif %}
+  </div>
+
+  {% if items|length > 1 %}
+  <div class="flex justify-center gap-2 mt-3">
+    {% for item in items %}
+    <button type="button" data-carousel-dot aria-label="Aller à la photo {{ forloop.counter }}"
+            class="w-2.5 h-2.5 border-2 border-ink bg-transparent aria-[current=true]:bg-red"></button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</figure>
+{% endwith %}
+
+{% elif home_media.video_kind == "file" %}
+<figure class="rv">
+  <div class="aspect-[4/3] bg-ink border-2 border-ink overflow-hidden">
+    {% comment %}autoplay + muted : démarrage auto en sourdine (le muet est requis par les
+    navigateurs pour autoriser l'autoplay) ; les contrôles permettent d'activer le son.{% endcomment %}
+    <video controls autoplay muted playsinline preload="metadata" class="w-full h-full object-contain">
+      <source src="{{ home_media.video_file.url }}"{% if home_media.video_mime %} type="{{ home_media.video_mime }}"{% endif %}>
+    </video>
+  </div>
+  {% if home_media.video_caption %}
+  <figcaption class="mt-3 font-mono text-[.66rem] uppercase tracking-[.08em] text-muted">{{ home_media.video_caption }}</figcaption>
+  {% endif %}
+</figure>
+
+{% else %}{# mode vidéo, type embed #}
+<figure class="rv">
+  {% comment %}Click-to-load : rien n'est chargé depuis YouTube/Vimeo tant que l'utilisateur
+  n'a pas cliqué (cf main.js). L'iframe remplit alors le cadre 4:3.{% endcomment %}
+  <div data-embed data-src="{{ home_media.embed_play_src }}"
+       data-embed-title="Vidéo" data-embed-class="w-full h-full border-0"
+       data-embed-allow="fullscreen; picture-in-picture" data-embed-fullscreen
+       class="aspect-[4/3] bg-ink border-2 border-ink flex flex-col items-center justify-center text-center text-paper p-6">
+    <p class="font-display font-black text-[clamp(1.1rem,2.5vw,1.5rem)] leading-tight">La vidéo se charge sur demande</p>
+    <p class="text-paper/70 text-[.85rem] mt-2 max-w-[36ch]">Pour respecter votre vie privée, rien n'est chargé tant que vous ne cliquez pas.</p>
+    <button type="button" data-embed-load class="btn btn--red mt-5">Charger la vidéo</button>
+  </div>
+  {% if home_media.video_caption %}
+  <figcaption class="mt-3 font-mono text-[.66rem] uppercase tracking-[.08em] text-muted">{{ home_media.video_caption }}</figcaption>
+  {% endif %}
+</figure>
+{% endif %}
+{% endif %}

@@ -3,13 +3,25 @@ from pathlib import Path
 
 import pytest
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.common.models import DRAFT, PUBLISHED
 from apps.events.models import Event
+from apps.media.models import Image
+from apps.media.tests import make_image_file
 from apps.news.models import News
-from apps.pages.models import CallToAction, HomeContent, SocialLink, TickerItem
+from apps.pages.models import (
+    CallToAction,
+    HomeContent,
+    HomeMedia,
+    HomeMediaImage,
+    SocialLink,
+    TickerItem,
+    build_embed_src,
+)
 from apps.pages.punchline import render_punchline
 
 
@@ -586,3 +598,141 @@ def test_mentions_page_renders_seeded_content(client):
     assert 'href="mailto:contact@432hz.fr"' in html
     assert "<strong>Plausible</strong>" in html
     assert "click-to-load" in html
+
+
+# --- Bloc média de l'accueil (HomeMedia) ---
+
+
+@pytest.mark.django_db
+def test_home_media_seeded_off():
+    # La migration de seed crée l'unique ligne en mode désactivé.
+    hm = HomeMedia.load()
+    assert hm is not None
+    assert hm.mode == HomeMedia.OFF
+
+
+@pytest.mark.django_db
+def test_home_media_clean_requires_source_in_video_mode():
+    hm = HomeMedia.load()
+    # Vidéo fichier sans fichier → invalide.
+    hm.mode, hm.video_kind, hm.video_file, hm.video_url = (
+        HomeMedia.VIDEO, HomeMedia.FILE, "", "",
+    )
+    with pytest.raises(ValidationError):
+        hm.clean()
+    # Vidéo embed sans lien → invalide.
+    hm.video_kind = HomeMedia.EMBED
+    with pytest.raises(ValidationError):
+        hm.clean()
+    # Embed avec lien → valide.
+    hm.video_url = "https://youtu.be/dQw4w9WgXcQ"
+    hm.clean()
+
+
+@pytest.mark.django_db
+def test_home_media_clean_no_constraint_off_or_photos():
+    hm = HomeMedia.load()
+    for mode in (HomeMedia.OFF, HomeMedia.PHOTOS):
+        hm.mode = mode
+        hm.clean()  # ne lève pas, même sans vidéo
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+         "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"),
+        ("https://youtu.be/dQw4w9WgXcQ",
+         "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"),
+        ("https://www.youtube.com/embed/dQw4w9WgXcQ",
+         "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"),
+        ("https://vimeo.com/123456789", "https://player.vimeo.com/video/123456789"),
+        ("https://player.vimeo.com/video/123456789",
+         "https://player.vimeo.com/video/123456789"),
+        ("https://example.com/video.mp4", None),
+        ("https://www.dailymotion.com/video/x123", None),
+        ("javascript:alert(1)", None),
+        ("", None),
+    ],
+)
+def test_build_embed_src(url, expected):
+    assert build_embed_src(url) == expected
+
+
+@pytest.mark.django_db
+def test_home_off_renders_no_media_block(client):
+    # Seedé OFF : aucun bloc média sur l'accueil, le hero reste tel quel.
+    html = client.get(reverse("home")).content.decode()
+    assert "data-carousel" not in html
+    assert "<video" not in html
+    assert "data-embed" not in html
+
+
+@pytest.mark.django_db
+def test_home_photos_render_carousel_with_captions(client):
+    hm = HomeMedia.load()
+    hm.mode = HomeMedia.PHOTOS
+    hm.save()
+    a = Image.objects.create(file=make_image_file(), alt="a", caption="Légende une")
+    b = Image.objects.create(file=make_image_file(), alt="b", caption="Légende deux")
+    HomeMediaImage.objects.create(home_media=hm, image=a, order=0)
+    HomeMediaImage.objects.create(home_media=hm, image=b, order=1)
+    html = client.get(reverse("home")).content.decode()
+    assert "data-carousel" in html
+    assert "data-carousel-dot" in html
+    assert "Légende une" in html
+    assert "Légende deux" in html
+
+
+@pytest.mark.django_db
+def test_home_single_photo_has_no_carousel_controls(client):
+    hm = HomeMedia.load()
+    hm.mode = HomeMedia.PHOTOS
+    hm.save()
+    a = Image.objects.create(file=make_image_file(), alt="a", caption="Seule")
+    HomeMediaImage.objects.create(home_media=hm, image=a, order=0)
+    html = client.get(reverse("home")).content.decode()
+    # Une seule photo → pas de contrôles de navigation (mais la photo et sa légende sont là).
+    assert "data-carousel-dot" not in html
+    assert "data-carousel-next" not in html
+    assert "Seule" in html
+
+
+@pytest.mark.django_db
+def test_home_photos_without_image_renders_no_block_nor_grid(client):
+    # mode=photos mais aucune photo : le bloc n'est pas affichable → pas de grille 2 colonnes
+    # (sinon l'accueil aurait une colonne vide et une intro rétrécie).
+    hm = HomeMedia.load()
+    hm.mode = HomeMedia.PHOTOS
+    hm.save()
+    assert hm.is_active is False
+    html = client.get(reverse("home")).content.decode()
+    assert "data-carousel" not in html
+    assert "grid-cols-[1.1fr_1fr]" not in html
+
+
+@pytest.mark.django_db
+def test_home_video_file_renders_video_tag(client, settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path  # isole l'écriture du fichier (pas de pollution du media réel)
+    hm = HomeMedia.load()
+    hm.mode, hm.video_kind = HomeMedia.VIDEO, HomeMedia.FILE
+    hm.video_file = SimpleUploadedFile("clip.mp4", b"fake-video", content_type="video/mp4")
+    hm.video_caption = "Notre clip"
+    hm.save()
+    html = client.get(reverse("home")).content.decode()
+    assert "<video" in html
+    assert hm.video_file.url in html
+    assert "Notre clip" in html
+
+
+@pytest.mark.django_db
+def test_home_video_embed_uses_click_to_load_not_iframe(client):
+    hm = HomeMedia.load()
+    hm.mode, hm.video_kind = HomeMedia.VIDEO, HomeMedia.EMBED
+    hm.video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    hm.save()
+    html = client.get(reverse("home")).content.decode()
+    assert "data-embed" in html
+    # L'iframe n'est PAS dans le HTML servi (chargée au clic) ; data-src = nocookie.
+    assert "<iframe" not in html
+    assert "youtube-nocookie.com/embed/dQw4w9WgXcQ" in html

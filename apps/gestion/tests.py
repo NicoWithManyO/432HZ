@@ -13,7 +13,7 @@ from apps.accounts.models import OWNER, Invitation, Profile
 from apps.common.models import PUBLISHED
 from apps.common.sanitize import clean_html
 from apps.events.models import Event, EventImage
-from apps.gestion.forms import EventForm
+from apps.gestion.forms import EventForm, HomeMediaForm
 from apps.media.models import Image
 from apps.news.models import News
 from apps.pages.models import (
@@ -21,6 +21,7 @@ from apps.pages.models import (
     CallToAction,
     ContactContent,
     HomeContent,
+    HomeMedia,
     KeyFigure,
     MentionsContent,
     Mission,
@@ -570,10 +571,10 @@ def test_dashboard_renders_tabs_and_accordions(validated_client):
     for slug in ("accueil", "asso", "contact", "mentions", "menu"):
         assert f'aria-controls="panel-{slug}"' in html
         assert f'id="panel-{slug}"' in html
-    # Accordéons repliables : 4 sur l'accueil (Hero + Bandeau + Boutons + Affichage) + 4 sur
-    # L'asso (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes &
+    # Accordéons repliables : 5 sur l'accueil (Hero + Bandeau + Boutons + Média + Affichage)
+    # + 4 sur L'asso (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes &
     # coordonnées + Réseaux) + 1 sur Mentions légales (Textes) + 1 sur Menu (Boutons).
-    assert html.count('class="gestion-accordion"') == 12
+    assert html.count('class="gestion-accordion"') == 13
     assert reverse("gestion:home-display-update") in html
 
 
@@ -921,3 +922,80 @@ def test_ordered_list_unknown_key_is_404(validated_client):
 def test_ordered_list_create_requires_login(client):
     response = client.post(reverse("gestion:list-create", args=["mission"]), {"title": "X"})
     assert response.status_code == 302  # anonyme → login
+
+
+# --- Bloc média de l'accueil (HomeMedia) ---
+
+
+def _home_media_data(**extra):
+    data = {
+        "mode": HomeMedia.OFF,
+        "video_kind": HomeMedia.FILE,
+        "video_file": "",
+        "video_url": "",
+        "video_caption": "",
+        "gallery": "",
+    }
+    data.update(extra)
+    return data
+
+
+@pytest.mark.django_db
+def test_home_media_form_rejects_non_youtube_vimeo_url():
+    form = HomeMediaForm(
+        data=_home_media_data(
+            mode=HomeMedia.VIDEO, video_kind=HomeMedia.EMBED,
+            video_url="https://example.com/video.mp4",
+        )
+    )
+    assert not form.is_valid()
+    assert "video_url" in form.errors
+
+
+@pytest.mark.django_db
+def test_home_media_form_save_gallery_reuses_generalized_mixin():
+    # Valide la généralisation de GalleryFormMixin sur un manager nommé « images ».
+    hm = HomeMedia.load()
+    a = Image.objects.create(alt="a")
+    b = Image.objects.create(alt="b")
+    form = HomeMediaForm(
+        data=_home_media_data(mode=HomeMedia.PHOTOS, gallery=f"{a.pk},{b.pk}"), instance=hm
+    )
+    assert form.is_valid(), form.errors
+    form.save_gallery(hm)
+    assert list(hm.image_items.values_list("image_id", "order")) == [(a.pk, 0), (b.pk, 1)]
+
+
+@pytest.mark.django_db
+def test_home_media_update_requires_login(client):
+    response = client.post(reverse("gestion:home-media-update"), _home_media_data())
+    assert response.status_code == 302  # anonyme → login
+
+
+@pytest.mark.django_db
+def test_home_media_update_saves_photos(validated_client):
+    a = Image.objects.create(alt="a")
+    b = Image.objects.create(alt="b")
+    response = validated_client.post(
+        reverse("gestion:home-media-update"),
+        _home_media_data(mode=HomeMedia.PHOTOS, gallery=f"{a.pk},{b.pk}"),
+    )
+    assert response.status_code == 302
+    hm = HomeMedia.load()
+    assert hm.mode == HomeMedia.PHOTOS
+    assert list(hm.image_items.values_list("image_id", "order")) == [(a.pk, 0), (b.pk, 1)]
+
+
+@pytest.mark.django_db
+def test_home_media_update_uploads_video(validated_client, settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path  # isole l'écriture du fichier vidéo
+    video = SimpleUploadedFile("clip.mp4", b"fake-video", content_type="video/mp4")
+    data = _home_media_data(mode=HomeMedia.VIDEO, video_kind=HomeMedia.FILE)
+    del data["video_file"]  # remplacé par le vrai fichier ci-dessous
+    response = validated_client.post(
+        reverse("gestion:home-media-update"), {**data, "video_file": video}
+    )
+    assert response.status_code == 302
+    hm = HomeMedia.load()
+    assert hm.mode == HomeMedia.VIDEO
+    assert hm.video_file.name.endswith(".mp4")

@@ -12,11 +12,13 @@ from apps.pages.models import (
     CallToAction,
     ContactContent,
     HomeContent,
+    HomeMedia,
     KeyFigure,
     MentionsContent,
     Mission,
     SocialLink,
     TickerItem,
+    build_embed_src,
 )
 
 # Format attendu/rendu par l'input HTML <input type="datetime-local">.
@@ -31,20 +33,27 @@ class _DateTimeLocalInput(forms.DateTimeInput):
 
 
 class GalleryFormMixin:
-    """Édition d'une galerie ordonnée (M2M *through* `EventImage`/`NewsImage` avec `order`).
+    """Édition d'une galerie ordonnée (M2M *through* avec `order`).
 
     Django n'éditant pas un M2M *through* dans un `ModelForm`, on passe par un champ caché
     `gallery` portant les UUID d'images séparés par des virgules, dans l'ordre voulu (écrit
     par le picker JS). Le champ est injecté en `__init__` (et non en attribut de classe) pour
     rester insensible à la collecte de champs du métaclasse `ModelForm`. La synchro des lignes
-    *through* est faite par `save_gallery`, appelée par la vue après la sauvegarde de l'objet."""
+    *through* est faite par `save_gallery`, appelée par la vue après la sauvegarde de l'objet.
+
+    Les noms du manager M2M et du *related* du *through* sont configurables (défaut :
+    events/actus) → le mixin sert aussi un modèle nommant sa galerie autrement (ex. HomeMedia)."""
+
+    GALLERY_MANAGER = "gallery"  # nom du M2M sur le modèle
+    GALLERY_ITEMS_RELATED = "gallery_items"  # related_name des lignes *through*
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["gallery"] = forms.CharField(required=False, widget=forms.HiddenInput)
         # Pré-remplit l'ordre courant à l'édition d'un objet existant.
         if self.instance.pk:
-            ids = self.instance.gallery_items.values_list("image_id", flat=True)
+            items = getattr(self.instance, self.GALLERY_ITEMS_RELATED)
+            ids = items.values_list("image_id", flat=True)
             self.fields["gallery"].initial = ",".join(str(pk) for pk in ids)
 
     def clean_gallery(self):
@@ -79,9 +88,9 @@ class GalleryFormMixin:
     def save_gallery(self, instance):
         # Synchro KISS : on efface puis on recrée les lignes dans l'ordre (galeries petites).
         images = self.cleaned_data.get("gallery", [])
-        manager = instance.gallery
+        manager = getattr(instance, self.GALLERY_MANAGER)
         through = manager.through
-        source = manager.source_field_name  # « event » / « news »
+        source = manager.source_field_name  # « event » / « news » / « home_media »
         through.objects.filter(**{source: instance}).delete()
         through.objects.bulk_create(
             through(**{source: instance, "image": image, "order": index})
@@ -179,6 +188,39 @@ class HomeDisplayForm(forms.ModelForm):
             "events_count": "0 masque la grille des events suivants (la une reste affichée).",
             "news_count": "0 masque la section Actus.",
         }
+
+
+class HomeMediaForm(GalleryFormMixin, forms.ModelForm):
+    """Réglage du bloc média de l'accueil (mode + source vidéo + galerie de photos).
+
+    Le picker de photos réutilise GalleryFormMixin (manager `images`, lignes
+    `image_items`). La cohérence mode/source est validée par `HomeMedia.clean()` (remontée
+    via `_post_clean`) ; ici on valide seulement que le lien embed est bien YouTube/Vimeo."""
+
+    GALLERY_MANAGER = "images"
+    GALLERY_ITEMS_RELATED = "image_items"
+
+    # `assume_scheme="https"` : schéma par défaut d'une URL sans protocole (et défaut explicite
+    # de Django 6.0 → silence le warning de transition, cf SocialLinkForm).
+    video_url = forms.URLField(assume_scheme="https", required=False)
+
+    class Meta:
+        model = HomeMedia
+        fields = ["mode", "video_kind", "video_file", "video_url", "video_caption"]
+        labels = {
+            "mode": "Type de média",
+            "video_kind": "Source de la vidéo",
+            "video_file": "Fichier vidéo (MP4 / WebM)",
+            "video_url": "Lien YouTube ou Vimeo",
+            "video_caption": "Légende de la vidéo",
+        }
+
+    def clean_video_url(self):
+        # Vide accepté (mode photos/off, ou vidéo fichier) ; sinon, doit être reconnu.
+        url = self.cleaned_data["video_url"]
+        if url and build_embed_src(url) is None:
+            raise forms.ValidationError("Lien non reconnu : utilisez une URL YouTube ou Vimeo.")
+        return url
 
 
 class AssoContentForm(forms.ModelForm):

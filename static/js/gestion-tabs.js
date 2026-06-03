@@ -82,6 +82,30 @@ if (accordions.length) {
   });
 }
 
+// Bloc média de l'accueil : n'affiche que les champs pertinents selon le mode (photos /
+// vidéo) et, en vidéo, selon la source (fichier / lien). Sans JS, tous les champs restent
+// visibles (la validation serveur garantit la cohérence) — pur confort d'édition.
+const mediaForm = document.querySelector("[data-home-media]");
+if (mediaForm) {
+  const mode = mediaForm.querySelector('[name="mode"]');
+  const kind = mediaForm.querySelector('[name="video_kind"]');
+  const groups = mediaForm.querySelectorAll("[data-media-group]");
+  const applyMedia = () => {
+    groups.forEach((group) => {
+      const which = group.dataset.mediaGroup;
+      let show = false;
+      if (which === "photos") show = mode.value === "photos";
+      else if (which === "video") show = mode.value === "video";
+      else if (which === "video-file") show = mode.value === "video" && kind.value === "file";
+      else if (which === "video-embed") show = mode.value === "video" && kind.value === "embed";
+      group.hidden = !show;
+    });
+  };
+  mode.addEventListener("change", applyMedia);
+  kind.addEventListener("change", applyMedia);
+  applyMedia();
+}
+
 // Mémorise la position de scroll juste avant tout enregistrement (y compris les boutons
 // d'icône monter/descendre/supprimer), restaurée une seule fois au rechargement suivant.
 document.addEventListener("submit", () => {

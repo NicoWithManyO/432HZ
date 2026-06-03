@@ -61,21 +61,90 @@ if (ticker) {
 
 // --- Click-to-load des embeds tiers (RGPD) ---
 // Aucun appel au service tiers tant que l'utilisateur n'a pas cliqué : au clic, on injecte
-// l'iframe depuis `data-src` et on retire le placeholder. Utilisé par le formulaire HelloAsso.
-const embed = document.querySelector("[data-embed]");
-const embedLoad = embed && embed.querySelector("[data-embed-load]");
-if (embed && embedLoad) {
+// l'iframe depuis `data-src` et on retire le placeholder. Plusieurs embeds peuvent coexister
+// sur une page (formulaire HelloAsso, vidéo de l'accueil…), chacun configuré par ses
+// data-attributs (titre, classe d'iframe, permissions, plein écran).
+document.querySelectorAll("[data-embed]").forEach((embed) => {
+  const embedLoad = embed.querySelector("[data-embed-load]");
+  if (!embedLoad) return;
   embedLoad.addEventListener("click", () => {
     const src = embed.dataset.src;
     if (!src) return; // pas d'URL configurée → on ne touche à rien
     const iframe = document.createElement("iframe");
     iframe.src = src;
     iframe.loading = "lazy";
-    iframe.title = "Formulaire d'adhésion HelloAsso";
-    iframe.className = "w-full min-h-[640px] border-0";
+    // La politique referrer du site est `same-origin` : sans referer, YouTube refuse la
+    // lecture (erreur 153). On envoie juste l'origine en cross-origin (RGPD : pas l'URL
+    // complète), ce qui suffit au lecteur tiers et débloque la lecture.
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    iframe.title = embed.dataset.embedTitle || "Contenu intégré";
+    iframe.className = embed.dataset.embedClass || "w-full min-h-[640px] border-0";
+    if (embed.dataset.embedAllow) iframe.allow = embed.dataset.embedAllow;
+    if ("embedFullscreen" in embed.dataset) iframe.allowFullscreen = true;
     embed.replaceChildren(iframe);
   });
-}
+});
+
+// --- Carrousel de photos (accueil) : auto + flèches + points, vanilla, accessible ---
+// Défilement auto seulement si `data-carousel-auto` ET hors prefers-reduced-motion. L'auto
+// se met en pause au survol/focus. Sans JS, la 1re photo reste visible (les autres masquées).
+document.querySelectorAll("[data-carousel]").forEach((carousel) => {
+  const slides = [...carousel.querySelectorAll("[data-carousel-slide]")];
+  if (slides.length < 2) return;
+  const dots = [...carousel.querySelectorAll("[data-carousel-dot]")];
+  let index = 0;
+  let timer = null;
+
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const auto = carousel.hasAttribute("data-carousel-auto") && !reduced;
+
+  const rearm = () => {
+    if (!auto) return;
+    clearInterval(timer);
+    timer = setInterval(() => show(index + 1), 5000);
+  };
+
+  const show = (i) => {
+    index = (i + slides.length) % slides.length;
+    slides.forEach((slide, k) => {
+      const on = k === index;
+      slide.classList.toggle("opacity-0", !on);
+      slide.classList.toggle("pointer-events-none", !on);
+    });
+    dots.forEach((dot, k) =>
+      dot.setAttribute("aria-current", k === index ? "true" : "false"),
+    );
+  };
+
+  carousel
+    .querySelector("[data-carousel-prev]")
+    ?.addEventListener("click", () => {
+      show(index - 1);
+      rearm();
+    });
+  carousel
+    .querySelector("[data-carousel-next]")
+    ?.addEventListener("click", () => {
+      show(index + 1);
+      rearm();
+    });
+  dots.forEach((dot, k) =>
+    dot.addEventListener("click", () => {
+      show(k);
+      rearm();
+    }),
+  );
+
+  if (auto) {
+    carousel.addEventListener("mouseenter", () => clearInterval(timer));
+    carousel.addEventListener("mouseleave", rearm);
+    carousel.addEventListener("focusin", () => clearInterval(timer));
+    carousel.addEventListener("focusout", rearm);
+  }
+
+  show(0);
+  rearm();
+});
 
 // --- Reveals au scroll (IntersectionObserver) ---
 const revealables = document.querySelectorAll(".rv");

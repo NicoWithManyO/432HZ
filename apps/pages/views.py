@@ -15,6 +15,8 @@ from apps.pages.models import (
     CallToAction,
     ContactContent,
     HomeContent,
+    HomeMedia,
+    HomeMediaImage,
     KeyFigure,
     MentionsContent,
     Mission,
@@ -33,6 +35,13 @@ class HomeView(TemplateView):
         home = HomeContent.load()
         context["home"] = home
         context["home_ctas"] = CallToAction.objects.filter(page=CallToAction.HOME)
+        # Bloc média à côté de l'intro. Prefetch des images du carrousel (image comprise)
+        # → la galerie est servie en requêtes constantes, sans N+1 ni .all() répétés.
+        context["home_media"] = (
+            HomeMedia.objects.prefetch_related(
+                Prefetch("image_items", queryset=HomeMediaImage.objects.select_related("image"))
+            ).first()
+        )
 
         # Nombres affichés, configurés en gestion (repli sur les défauts du modèle si la base
         # n'a pas encore de contenu). Exposés au template pour masquer la section Actus à 0.

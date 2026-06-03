@@ -22,6 +22,7 @@ urlpatterns = [
         views.HomeDisplayUpdateView.as_view(),
         name="home-display-update",
     ),
+    path("accueil/media/", views.HomeMediaUpdateView.as_view(), name="home-media-update"),
     path("bandeau/ajouter/", views.TickerItemCreateView.as_view(), name="ticker-create"),
     path(
         "bandeau/<uuid:pk>/supprimer/",

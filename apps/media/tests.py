@@ -7,7 +7,12 @@ from PIL import Image as PILImage
 
 from apps.media.forms import ImageMetaForm, ImageUploadForm
 from apps.media.models import Image, image_upload_to
-from apps.media.validators import MAX_IMAGE_SIZE, validate_image_file
+from apps.media.validators import (
+    MAX_IMAGE_SIZE,
+    MAX_VIDEO_SIZE,
+    validate_image_file,
+    validate_video_file,
+)
 
 
 def make_image_file(name="photo.jpg", fmt="JPEG", size=(64, 64)):
@@ -73,6 +78,45 @@ def test_upload_form_rejects_non_image():
     form = ImageUploadForm(data={"alt": "", "title": ""}, files={"file": fake})
     assert not form.is_valid()
     assert "file" in form.errors
+
+
+# --- Validateur vidéo ---
+
+
+def _video_upload(name="clip.mp4", content_type="video/mp4", content=b"fake-video"):
+    return SimpleUploadedFile(name, content, content_type=content_type)
+
+
+@pytest.mark.parametrize(
+    "name,content_type",
+    [("clip.mp4", "video/mp4"), ("clip.webm", "video/webm")],
+)
+def test_validate_video_accepts_mp4_and_webm(name, content_type):
+    validate_video_file(_video_upload(name=name, content_type=content_type))
+
+
+def test_validate_video_rejects_disallowed_extension():
+    with pytest.raises(ValidationError):
+        validate_video_file(_video_upload(name="clip.mov", content_type="video/quicktime"))
+
+
+def test_validate_video_rejects_disallowed_content_type():
+    # Bonne extension mais content-type incohérent → refusé.
+    with pytest.raises(ValidationError):
+        validate_video_file(_video_upload(name="clip.mp4", content_type="application/octet-stream"))
+
+
+def test_validate_video_rejects_oversize():
+    upload = _video_upload()
+    upload.size = MAX_VIDEO_SIZE + 1  # gros fichier simulé sans générer 100 Mo
+    with pytest.raises(ValidationError):
+        validate_video_file(upload)
+
+
+def test_home_media_field_carries_video_validator():
+    from apps.pages.models import HomeMedia
+
+    assert validate_video_file in HomeMedia._meta.get_field("video_file").validators
 
 
 @pytest.mark.django_db
