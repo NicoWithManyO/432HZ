@@ -15,6 +15,9 @@ export default {
     "!./static/js/gestion-editor.js",
     "./theme/js/**/*.js",
   ],
+  // Variantes de bouton générées dynamiquement (`btn--{{ cta.variant }}` dans les
+  // templates) → invisibles au scan, à protéger du purge.
+  safelist: ["btn--red", "btn--ghost"],
   theme: {
     extend: {
       colors: {

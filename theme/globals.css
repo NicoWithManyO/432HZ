@@ -197,6 +197,11 @@ html.js .rv.pending {
     background: var(--red);
     color: var(--paper);
   }
+  /* Secondaire : fond clair, texte encre (la bordure/ombre vient de .btn). */
+  .btn--ghost {
+    background: var(--paper);
+    color: var(--ink);
+  }
 
   /* Bouton-icône carré (actions de liste en gestion : ▲ ▼ ★ ✕). */
   .btn-icon {
