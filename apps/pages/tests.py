@@ -527,6 +527,48 @@ def test_social_links_render_icon_sprite_reference(client):
     assert 'href="#i-instagram"' in footer_html
 
 
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://don.test/", True),
+        ("http://don.test/", True),
+        ("/adherer/", False),
+        ("#ancre", False),
+        ("mailto:a@b.fr", False),
+    ],
+)
+def test_cta_is_external(url, expected):
+    # is_external pilote l'ouverture en nouvel onglet (liens http/https seulement).
+    assert CallToAction(label="x", url=url).is_external is expected
+
+
+@pytest.mark.django_db
+def test_nav_cta_adherer_is_seeded():
+    # Le bouton « Adhérer » du header est repris en base (page=nav) → header inchangé.
+    assert CallToAction.objects.filter(page=CallToAction.NAV, label="Adhérer").exists()
+
+
+@pytest.mark.django_db
+def test_nav_ctas_render_in_header_with_variant(client):
+    # Les boutons « Menu » (page=nav) sont rendus dans le header, rouge ou contour.
+    CallToAction.objects.filter(page=CallToAction.NAV).delete()
+    CallToAction.objects.create(
+        page=CallToAction.NAV, label="Adhérer", url="/adherer/", variant="red", order=0
+    )
+    CallToAction.objects.create(
+        page=CallToAction.NAV, label="Faire un don", url="https://don.test/",
+        variant="ghost", order=1,
+    )
+
+    html = client.get(reverse("home")).content.decode()
+    assert "Adhérer" in html
+    # Lien externe (HelloAsso) → nouvel onglet ; lien interne → même onglet.
+    assert 'href="https://don.test/" target="_blank" rel="noopener noreferrer"' in html
+    assert 'href="/adherer/" target="_blank"' not in html
+    # La variante ghost bascule vers le style secondaire (fond clair, texte encre).
+    assert "bg-paper text-ink" in html
+
+
 @pytest.mark.django_db
 def test_mentions_page_renders_seeded_content(client):
     # Après bascule template→base : le rendu reprend les textes d'origine + les titres

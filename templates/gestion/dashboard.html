@@ -14,6 +14,7 @@
   <button type="button" class="gestion-tab" role="tab" id="tab-asso" aria-controls="panel-asso" aria-selected="false">L'asso</button>
   <button type="button" class="gestion-tab" role="tab" id="tab-contact" aria-controls="panel-contact" aria-selected="false">Contact</button>
   <button type="button" class="gestion-tab" role="tab" id="tab-mentions" aria-controls="panel-mentions" aria-selected="false">Mentions légales</button>
+  <button type="button" class="gestion-tab" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false">Menu</button>
 </div>
 
 {# --- Onglet Accueil : les deux blocs existants en accordéon --- #}
@@ -192,6 +193,20 @@
         {{ mentions_form.as_p }}
         <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
       </form>
+    </div>
+  </details>
+
+</div>
+
+<div id="panel-menu" role="tabpanel" aria-labelledby="tab-menu" tabindex="0">
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Boutons</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Les boutons d'action de la barre de navigation, après les liens Agenda / Actus / L'asso / Contact.</p>
+      {% include "gestion/_ordered_list.html" with items=nav_ctas_list.items add_form=nav_ctas_list.add_form list_key=nav_ctas_list.key empty_text="Aucun bouton." %}
     </div>
   </details>
 

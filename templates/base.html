@@ -54,7 +54,9 @@
         <a class="nav-link" href="{% url 'actus' %}">Actus</a>
         <a class="nav-link" href="{% url 'asso' %}">L'asso</a>
         <a class="nav-link" href="{% url 'contact' %}">Contact</a>
-        <a href="{% url 'adherer' %}" class="inline-flex items-center min-h-[44px] bg-red text-paper border-2 border-ink shadow-hard px-[18px] font-extrabold hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--ink)] transition">Adhérer</a>
+        {% for cta in nav_ctas %}
+        <a href="{{ cta.url }}"{% if cta.is_external %} target="_blank" rel="noopener noreferrer"{% endif %} class="inline-flex items-center min-h-[44px] {% if cta.variant == 'ghost' %}bg-paper text-ink{% else %}bg-red text-paper{% endif %} border-2 border-ink shadow-hard px-[18px] font-extrabold hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--ink)] transition">{{ cta.label }}</a>
+        {% endfor %}
       </nav>
 
       <button type="button" data-burger class="burger max-[880px]:flex hidden flex-col gap-[5px] p-[10px] bg-transparent border-0 cursor-pointer z-[80]" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu">
@@ -70,7 +72,13 @@
       <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'actus' %}">Actus</a>
       <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'asso' %}">L'asso</a>
       <a class="font-display font-black text-[clamp(2rem,11vw,3.2rem)] leading-none py-[14px] border-b-2 border-line" href="{% url 'contact' %}">Contact</a>
-      <a class="mt-7 bg-red text-paper border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="{% url 'adherer' %}">Adhérer</a>
+      {% if nav_ctas %}
+      <div class="mt-7 flex flex-col gap-3">
+        {% for cta in nav_ctas %}
+        <a class="{% if cta.variant == 'ghost' %}bg-paper text-ink{% else %}bg-red text-paper{% endif %} border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="{{ cta.url }}"{% if cta.is_external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ cta.label }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
     </nav>
   </div>
   {% endblock header %}

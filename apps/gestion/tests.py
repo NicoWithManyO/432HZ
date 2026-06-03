@@ -567,13 +567,13 @@ def test_home_display_update_rejects_over_max(validated_client):
 def test_dashboard_renders_tabs_and_accordions(validated_client):
     # Onglets : un par page éditable, chacun relié à son panneau (aria-controls).
     html = validated_client.get(reverse("gestion:dashboard")).content.decode()
-    for slug in ("accueil", "asso", "contact", "mentions"):
+    for slug in ("accueil", "asso", "contact", "mentions", "menu"):
         assert f'aria-controls="panel-{slug}"' in html
         assert f'id="panel-{slug}"' in html
     # Accordéons repliables : 4 sur l'accueil (Hero + Bandeau + Boutons + Affichage) + 4 sur
     # L'asso (Textes + Missions + Chiffres-clés + Boutons) + 2 sur Contact (Textes &
-    # coordonnées + Réseaux) + 1 sur Mentions légales (Textes).
-    assert html.count('class="gestion-accordion"') == 11
+    # coordonnées + Réseaux) + 1 sur Mentions légales (Textes) + 1 sur Menu (Boutons).
+    assert html.count('class="gestion-accordion"') == 12
     assert reverse("gestion:home-display-update") in html
 
 
@@ -849,6 +849,19 @@ def test_cta_create_is_scoped_to_its_page(validated_client):
     assert created.page == CallToAction.ASSO  # scope posé par la vue, pas saisi
     assert created.variant == "ghost"
     assert created.order == 0  # 1er bouton de la page asso, indépendant du hero
+
+
+@pytest.mark.django_db
+def test_nav_cta_create_is_scoped_to_nav(validated_client):
+    # L'onglet Menu réutilise le CRUD générique : la clé nav-cta force page=nav.
+    response = validated_client.post(
+        reverse("gestion:list-create", args=["nav-cta"]),
+        {"nav-cta-new-label": "Faire un don", "nav-cta-new-url": "https://don.test/",
+         "nav-cta-new-variant": "ghost"},
+    )
+    assert response.status_code == 302
+    created = CallToAction.objects.get(label="Faire un don")
+    assert created.page == CallToAction.NAV  # scope posé par la vue, pas saisi
 
 
 @pytest.mark.django_db

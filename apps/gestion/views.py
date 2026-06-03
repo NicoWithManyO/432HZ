@@ -82,6 +82,10 @@ class DashboardView(ValidatedRequiredMixin, TemplateView):
         )
         # Onglet Mentions légales
         context["mentions_form"] = MentionsContentForm(instance=MentionsContent.load())
+        # Onglet Menu
+        context["nav_ctas_list"] = self._ordered_list_ctx(
+            "nav-cta", CallToAction.objects.filter(page=CallToAction.NAV)
+        )
         return context
 
     @staticmethod
@@ -243,6 +247,10 @@ ORDERED_LISTS = {
         "scope": {"page": CallToAction.ASSO},
     },
     "social-link": {"model": SocialLink, "form": SocialLinkForm, "tab": "contact"},
+    "nav-cta": {
+        "model": CallToAction, "form": CallToActionForm, "tab": "menu",
+        "scope": {"page": CallToAction.NAV},
+    },
 }
 
 

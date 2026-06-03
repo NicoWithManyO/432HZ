@@ -70,12 +70,14 @@ class AssoContent(SingletonModel, SanitizedHTMLModel, UUIDModel):
 
 
 class CallToAction(UUIDModel):
-    """Bouton d'appel à l'action, libre et réordonnable. Sert le hero de l'accueil et la
-    page L'asso (`page`), avec deux styles : rouge plein (principal) ou contour (ghost)."""
+    """Bouton d'appel à l'action, libre et réordonnable. Sert le hero de l'accueil, la
+    page L'asso et la barre de navigation (`page`), avec deux styles : rouge plein
+    (principal) ou contour (ghost)."""
 
     HOME = "home"
     ASSO = "asso"
-    PAGE_CHOICES = [(HOME, "Accueil"), (ASSO, "L'asso")]
+    NAV = "nav"
+    PAGE_CHOICES = [(HOME, "Accueil"), (ASSO, "L'asso"), (NAV, "Menu")]
 
     RED = "red"
     GHOST = "ghost"
@@ -92,6 +94,11 @@ class CallToAction(UUIDModel):
 
     def __str__(self):
         return self.label
+
+    @property
+    def is_external(self):
+        """Vrai pour un lien externe (http/https) → à ouvrir dans un nouvel onglet."""
+        return self.url.startswith("http")
 
 
 class Mission(UUIDModel):
