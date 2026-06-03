@@ -22,20 +22,6 @@
 
   <details class="gestion-accordion">
     <summary>
-      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Hero de l'accueil</h2>
-    </summary>
-    <div class="gestion-accordion-body">
-      <p class="text-ink-soft text-[.92rem] mb-5">Le bloc d'introduction en haut de la page d'accueil.</p>
-      <form method="post" action="{% url 'gestion:home-content-update' %}" class="gestion-form flex flex-col gap-4">
-        {% csrf_token %}
-        {{ home_form.as_p }}
-        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
-      </form>
-    </div>
-  </details>
-
-  <details class="gestion-accordion">
-    <summary>
       <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Bandeau défilant</h2>
     </summary>
     <div class="gestion-accordion-body">
@@ -74,6 +60,20 @@
         <div class="flex-1 min-w-[200px]">{{ ticker_form.text.label_tag }}{{ ticker_form.text }}</div>
         <label class="flex items-center gap-2 pb-2 text-[.9rem]">{{ ticker_form.highlighted }} Mise en avant</label>
         <button type="submit" class="btn btn--red">Ajouter</button>
+      </form>
+    </div>
+  </details>
+
+  <details class="gestion-accordion">
+    <summary>
+      <h2 class="font-display font-black text-[clamp(1.3rem,3.5vw,1.8rem)] leading-none">Hero de l'accueil</h2>
+    </summary>
+    <div class="gestion-accordion-body">
+      <p class="text-ink-soft text-[.92rem] mb-5">Le bloc d'introduction en haut de la page d'accueil.</p>
+      <form method="post" action="{% url 'gestion:home-content-update' %}" class="gestion-form flex flex-col gap-4">
+        {% csrf_token %}
+        {{ home_form.as_p }}
+        <div><button type="submit" class="btn btn--red">Enregistrer</button></div>
       </form>
     </div>
   </details>
