@@ -4,11 +4,9 @@ Réponse au `DEPLOY-BRIEF.md` (point par point), pour le Claude devops.
 Les détails **sécurité applicative** (CSP, HSTS, rate-limiting, ré-encodage image) sont
 dans `HANDOFF-DEVOPS.md` — non répétés ici.
 
-> ⚠️ **L'app n'est pas encore 100 % conforme au brief.** Des items deploy-readiness ont
-> été volontairement reportés (phase P5 = sécu pure). Ils sont **côté app** (settings/deps)
-> et restent donc à faire **par le dev applicatif**, pas par l'infra (cf brief : « le
-> déploiement ne touche NI `settings.py` NI aucune config Django »). Voir la section
-> « À finir côté app » ci-dessous.
+> ✅ **App prête pour le déploiement.** Les items deploy-readiness (gunicorn, whitenoise,
+> `MEDIA_ROOT` par env, logging) ont été livrés. Reste un seul écart **volontaire** :
+> python-decouple au lieu de django-environ (même format `.env`). Détail dans le tableau.
 
 ---
 
@@ -17,32 +15,33 @@ dans `HANDOFF-DEVOPS.md` — non répétés ici.
 | § brief | Attendu | État | Note |
 |--------|---------|------|------|
 | 1 — config par env | `django-environ` | ⚠️ écart | On utilise **python-decouple** (même format `.env`, `CLÉ=valeur`). Équivalent fonctionnel, pas de réécriture prévue. |
-| 1 — `.env.example` exhaustif | toutes les clés | ⚠️ à compléter | À enrichir quand `MEDIA_ROOT`/whitenoise seront câblés (voir ci-dessous). |
+| 1 — `.env.example` exhaustif | toutes les clés | ✅ | Toutes les vars listées (dont `DJANGO_MEDIA_ROOT`). |
 | 2 — SQLite, chemin par env | var `SQLITE_PATH` | ✅ (nom différent) | La var s'appelle **`DJANGO_DB_PATH`** (défaut `BASE_DIR/db.sqlite3`). Préfixe `DJANGO_` **volontaire** (cohérent avec `DJANGO_SECRET_KEY`/`DJANGO_ALLOWED_HOSTS`) ; le `.env.example` fait foi comme contrat. |
-| 2 — `MEDIA_ROOT` par env | lu depuis env | ❌ pas fait | En dur `BASE_DIR/media`. À passer en env (sinon médias dans le repo → risque au `git reset --hard`). |
+| 2 — `MEDIA_ROOT` par env | lu depuis env | ✅ | Var **`DJANGO_MEDIA_ROOT`** (défaut `BASE_DIR/media`). À pointer hors repo en prod. |
 | 2 — aucun `.sqlite3` commité, migrations clean | — | ✅ | `.gitignore` couvre `*.sqlite3` (+WAL/SHM) ; `makemigrations --check` clean. |
-| 3 — whitenoise | dep + middleware + STORAGES | ❌ pas fait | Absent partout. Statique non servi en prod tant que non câblé (ou servi par Nginx). |
+| 3 — whitenoise | dep + middleware + STORAGES | ✅ | `whitenoise==6.12.0` ; middleware inséré après `SecurityMiddleware` **en prod** ; `STORAGES` = `CompressedManifestStaticFilesStorage` (prod). `collectstatic` validé. |
 | 4 — proxy SSL / cookies secure | via env, prod | ✅ | `prod.py` : `SECURE_PROXY_SSL_HEADER`, `SECURE_SSL_REDIRECT`, `SESSION/CSRF_COOKIE_SECURE`. |
-| 4 — logging stdout/stderr | dict LOGGING | ❌ pas fait | Aucune config `LOGGING`. À ajouter (StreamHandler, pas de FileHandler). |
-| 5 — gunicorn | dep prod + `--workers 1` | ⚠️ partiel | gunicorn **absent** de `requirements.txt`. WSGI OK (`config.wsgi:application`). `--workers 1` **obligatoire** (LocMemCache, cf HANDOFF-DEVOPS §3). |
-| 6 — requirements épinglés | `==` | ✅ (incomplet) | Tout épinglé, mais **gunicorn + whitenoise manquent**. |
+| 4 — logging stdout/stderr | dict LOGGING | ✅ | `LOGGING` avec `StreamHandler` (console), pas de FileHandler. |
+| 5 — gunicorn | dep prod + `--workers 1` | ✅ | `gunicorn==26.0.0`. WSGI = `config.wsgi:application`. `--workers 1` **obligatoire** (LocMemCache, cf HANDOFF-DEVOPS §3). |
+| 6 — requirements épinglés | `==` | ✅ | Tout épinglé, gunicorn + whitenoise inclus. |
 | 7 — Tailwind | signaler le build | ✅ signalé | Pipeline **Node standalone** (pas django-tailwind). CSS/JS compilés **non commités** → build requis au deploy (voir §9.5). |
 | 8 — branche DEV, `.gitignore` | — | ✅ | `.gitignore` exhaustif (`.env`, `*.sqlite3`, `.venv/`, `staticfiles/`, `media/`, `node_modules/`, compilés). |
 
 ---
 
-## À finir côté app AVANT un deploy fonctionnel
+## Deploy-prep livrée (côté app)
 
-Ces points sont **bloquants** et relèvent de l'app (le devops ne les corrigera pas) :
+Tous les items deploy-readiness sont en place :
 
-1. **gunicorn + whitenoise** dans `requirements.txt`.
-2. **whitenoise** : middleware juste après `SecurityMiddleware` + `STORAGES` (`CompressedManifestStaticFilesStorage`, prod uniquement pour ne pas casser le dev).
-3. **`MEDIA_ROOT`** lu depuis l'env (le devops le pointe hors repo).
-4. **`LOGGING`** : dict avec `StreamHandler` vers stdout/stderr.
-5. **`.env.example`** mis à jour avec les nouvelles vars (MEDIA_ROOT).
+- `gunicorn==26.0.0` + `whitenoise==6.12.0` dans `requirements.txt`.
+- WhiteNoise : middleware après `SecurityMiddleware` (prod) + `STORAGES`
+  `CompressedManifestStaticFilesStorage` (prod). `collectstatic --noinput` validé
+  (149 fichiers, 419 post-traités, manifest généré).
+- `MEDIA_ROOT` via `DJANGO_MEDIA_ROOT` (défaut `./media`).
+- `LOGGING` → `StreamHandler` (stdout/stderr), aucun FileHandler.
+- `.env.example` complété (`DJANGO_MEDIA_ROOT`).
 
-> Tant que ce n'est pas livré, le déploiement échouera (pas de serveur d'app, statiques non
-> servis, médias dans le repo). À traiter dans une courte itération « deploy-prep » côté app.
+Vérifs : 241 tests verts, `ruff` clean, `makemigrations --check` clean, `check --deploy` 0 issue.
 
 ---
 
@@ -54,8 +53,9 @@ Ces points sont **bloquants** et relèvent de l'app (le devops ne les corrigera 
 2. **Repo + branche** : `git@github.com:NicoWithManyO/432HZ.git`, branche **`DEV`**.
    ⚠️ Le dernier commit (`35bf823`, P5 + ce handoff) **n'est pas encore poussé** —
    Nico pousse manuellement ; vérifier que `origin/DEV` est à jour avant le deploy.
-3. **`.env.example`** : présent à la racine (contrat des vars). À recompléter après les
-   items « à finir côté app » (SQLITE_PATH, MEDIA_ROOT).
+3. **`.env.example`** : présent à la racine, complet (contrat des vars) — `DJANGO_SECRET_KEY`,
+   `DJANGO_ALLOWED_HOSTS`, `DJANGO_DB_PATH`, `DJANGO_MEDIA_ROOT`, `DJANGO_CSRF_TRUSTED_ORIGINS`,
+   `DJANGO_HSTS_SECONDS`, `DJANGO_CSP_REPORT_ONLY`.
 4. **Domaine(s) cible** en `*.manyo.dev` : **à renseigner par Nico** (inconnu côté dev).
 5. **Commandes post-deploy non standard** (au-delà de `migrate` + `collectstatic`) :
    - **Build Tailwind AVANT `collectstatic`** : `npm ci && npm run build` (génère

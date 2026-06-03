@@ -7,8 +7,17 @@ La CSP et le rate-limiting sont posés dans `base.py` (actifs aussi en dev pour 
 from decouple import Csv, config
 
 from .base import *  # noqa: F403
+from .base import MIDDLEWARE
 
 DEBUG = False
+
+# WhiteNoise sert les statiques en prod : inséré juste après SecurityMiddleware (ordre requis).
+# Absent en dev/test (runserver s'en charge) pour ne pas charger un middleware inerte.
+MIDDLEWARE = MIDDLEWARE.copy()
+MIDDLEWARE.insert(
+    MIDDLEWARE.index("django.middleware.security.SecurityMiddleware") + 1,
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+)
 
 # Secrets obligatoires en prod : pas de défaut, on échoue vite si le .env est incomplet.
 SECRET_KEY = config("DJANGO_SECRET_KEY")
@@ -39,3 +48,11 @@ CSRF_TRUSTED_ORIGINS = config("DJANGO_CSRF_TRUSTED_ORIGINS", default="", cast=Cs
 # CSRF reste lisible par le JS (l'upload AJAX en a besoin) → pas de CSRF_COOKIE_HTTPONLY.
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
+
+# Service des statiques par WhiteNoise : noms hashés (cache long) + compression. Manifest en
+# prod seulement — en dev le storage par défaut évite d'imposer un `collectstatic` pour
+# résoudre `{% static %}`. `collectstatic` doit tourner après le build Tailwind (cf handoff).
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}

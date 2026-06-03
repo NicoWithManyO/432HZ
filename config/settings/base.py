@@ -202,7 +202,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# Racine des médias uploadés : par env pour que le devops la pointe hors du repo
+# (sinon un `git reset --hard` au deploy emporterait les uploads). Défaut dev = ./media.
+MEDIA_ROOT = config("DJANGO_MEDIA_ROOT", default=BASE_DIR / "media")
 
 
 # Vignettes (easy-thumbnails) — sortie WebP partout (l'extension pilote le format
@@ -221,3 +223,22 @@ THUMBNAIL_ALIASES = {
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# Journalisation — sortie standard uniquement (gunicorn + journald capturent en prod, console
+# en dev). Pas de FileHandler : aucun chemin de log en dur (cf DEPLOY-BRIEF).
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "{levelname} {asctime} {name} {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
