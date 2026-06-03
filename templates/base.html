@@ -55,7 +55,7 @@
         <a class="nav-link" href="{% url 'asso' %}">L'asso</a>
         <a class="nav-link" href="{% url 'contact' %}">Contact</a>
         {% for cta in nav_ctas %}
-        <a href="{{ cta.url }}"{% if cta.is_external %} target="_blank" rel="noopener noreferrer"{% endif %} class="inline-flex items-center min-h-[44px] {% if cta.variant == 'ghost' %}bg-paper text-ink{% else %}bg-red text-paper{% endif %} border-2 border-ink shadow-hard px-[18px] font-extrabold hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--ink)] transition">{{ cta.label }}</a>
+        <a href="{{ cta.url }}"{% if cta.opens_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} class="inline-flex items-center min-h-[44px] {% if cta.variant == 'ghost' %}bg-paper text-ink{% else %}bg-red text-paper{% endif %} border-2 border-ink shadow-hard px-[18px] font-extrabold hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--ink)] transition">{{ cta.label }}</a>
         {% endfor %}
       </nav>
 
@@ -75,7 +75,7 @@
       {% if nav_ctas %}
       <div class="mt-7 flex flex-col gap-3">
         {% for cta in nav_ctas %}
-        <a class="{% if cta.variant == 'ghost' %}bg-paper text-ink{% else %}bg-red text-paper{% endif %} border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="{{ cta.url }}"{% if cta.is_external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ cta.label }}</a>
+        <a class="{% if cta.variant == 'ghost' %}bg-paper text-ink{% else %}bg-red text-paper{% endif %} border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[18px]" href="{{ cta.url }}"{% if cta.opens_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ cta.label }}</a>
         {% endfor %}
       </div>
       {% endif %}

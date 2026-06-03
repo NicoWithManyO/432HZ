@@ -844,7 +844,7 @@ def test_cta_create_is_scoped_to_its_page(validated_client):
     validated_client.post(
         reverse("gestion:list-create", args=["asso-cta"]),
         {"asso-cta-new-label": "Don", "asso-cta-new-url": "/don/",
-         "asso-cta-new-variant": "ghost"},
+         "asso-cta-new-variant": "ghost", "asso-cta-new-target": "auto"},
     )
     created = CallToAction.objects.get(label="Don")
     assert created.page == CallToAction.ASSO  # scope posé par la vue, pas saisi
@@ -858,7 +858,7 @@ def test_nav_cta_create_is_scoped_to_nav(validated_client):
     response = validated_client.post(
         reverse("gestion:list-create", args=["nav-cta"]),
         {"nav-cta-new-label": "Faire un don", "nav-cta-new-url": "https://don.test/",
-         "nav-cta-new-variant": "ghost"},
+         "nav-cta-new-variant": "ghost", "nav-cta-new-target": "auto"},
     )
     assert response.status_code == 302
     created = CallToAction.objects.get(label="Faire un don")

@@ -241,9 +241,10 @@ class CallToActionForm(forms.ModelForm):
 
     class Meta:
         model = CallToAction
-        fields = ["label", "url", "variant"]
+        fields = ["label", "url", "variant", "target"]
         help_texts = {
             "url": "Chemin interne (ex. /adherer/) ou URL externe.",
+            "target": "Auto : les liens externes s'ouvrent dans un nouvel onglet.",
         }
 
     def clean_url(self):

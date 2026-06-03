@@ -89,10 +89,20 @@ class CallToAction(UUIDModel):
     GHOST = "ghost"
     VARIANT_CHOICES = [(RED, "Rouge (principal)"), (GHOST, "Contour (secondaire)")]
 
+    AUTO = "auto"
+    BLANK = "blank"
+    SELF = "self"
+    TARGET_CHOICES = [
+        (AUTO, "Automatique (lien externe = nouvel onglet)"),
+        (BLANK, "Nouvel onglet"),
+        (SELF, "Même onglet"),
+    ]
+
     page = models.CharField(max_length=20, choices=PAGE_CHOICES)
     label = models.CharField(max_length=60)
     url = models.CharField(max_length=200)  # chemin interne (/adherer/) ou URL externe
     variant = models.CharField(max_length=10, choices=VARIANT_CHOICES, default=RED)
+    target = models.CharField(max_length=10, choices=TARGET_CHOICES, default=AUTO)
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -103,8 +113,18 @@ class CallToAction(UUIDModel):
 
     @property
     def is_external(self):
-        """Vrai pour un lien externe (http/https) → à ouvrir dans un nouvel onglet."""
+        """Vrai pour un lien externe (http/https)."""
         return self.url.startswith("http")
+
+    @property
+    def opens_in_new_tab(self):
+        """Ouverture en nouvel onglet : forcée par `target`, sinon déduite du lien (auto :
+        externe → nouvel onglet). Pilote target="_blank" rel="noopener noreferrer"."""
+        if self.target == self.BLANK:
+            return True
+        if self.target == self.SELF:
+            return False
+        return self.is_external
 
 
 class Mission(UUIDModel):

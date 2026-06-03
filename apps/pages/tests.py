@@ -554,6 +554,44 @@ def test_cta_is_external(url, expected):
     assert CallToAction(label="x", url=url).is_external is expected
 
 
+@pytest.mark.parametrize(
+    ("target", "url", "expected"),
+    [
+        # auto : suit is_external (externe → nouvel onglet, interne → même onglet).
+        ("auto", "https://don.test/", True),
+        ("auto", "/adherer/", False),
+        # override explicite : force quel que soit le type de lien.
+        ("blank", "/adherer/", True),
+        ("self", "https://don.test/", False),
+    ],
+)
+def test_cta_opens_in_new_tab(target, url, expected):
+    assert CallToAction(label="x", url=url, target=target).opens_in_new_tab is expected
+
+
+@pytest.mark.django_db
+def test_home_ctas_target_override_renders(client):
+    # Sur l'accueil, l'ouverture en nouvel onglet suit opens_in_new_tab (auto + override).
+    CallToAction.objects.filter(page=CallToAction.HOME).delete()
+    CallToAction.objects.create(
+        page=CallToAction.HOME, label="Externe auto", url="https://ext.test/",
+        target="auto", order=0,
+    )
+    CallToAction.objects.create(
+        page=CallToAction.HOME, label="Interne forcé", url="/agenda/",
+        target="blank", order=1,
+    )
+    CallToAction.objects.create(
+        page=CallToAction.HOME, label="Externe forcé même onglet", url="https://x.test/",
+        target="self", order=2,
+    )
+
+    html = client.get(reverse("home")).content.decode()
+    assert 'href="https://ext.test/" target="_blank" rel="noopener noreferrer"' in html
+    assert 'href="/agenda/" target="_blank" rel="noopener noreferrer"' in html
+    assert 'href="https://x.test/" target="_blank"' not in html
+
+
 @pytest.mark.django_db
 def test_nav_cta_adherer_is_seeded():
     # Le bouton « Adhérer » du header est repris en base (page=nav) → header inchangé.

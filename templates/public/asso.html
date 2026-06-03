@@ -36,7 +36,7 @@
 
     <div class="flex flex-wrap gap-[14px] mt-[clamp(32px,5vw,44px)]">
       {% for cta in asso_ctas %}
-      <a href="{{ cta.url }}" class="btn btn--{{ cta.variant }}">{{ cta.label }}</a>
+      <a href="{{ cta.url }}"{% if cta.opens_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} class="btn btn--{{ cta.variant }}">{{ cta.label }}</a>
       {% endfor %}
     </div>
   </div>
