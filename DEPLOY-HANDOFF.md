@@ -1,11 +1,10 @@
 # Handoff déploiement — 432 Hz
 
-Réponse au `DEPLOY-BRIEF.md` (point par point), pour le Claude devops.
-Les détails **sécurité applicative** (CSP, HSTS, rate-limiting, ré-encodage image) sont
-dans `HANDOFF-DEVOPS.md` — non répétés ici.
+Point d'entrée unique pour le Claude devops. Réponse au `DEPLOY-BRIEF.md` (point par
+point) + rappels d'infra liés à la sécurité applicative (P5).
 
 > ✅ **App prête pour le déploiement.** Les items deploy-readiness (gunicorn, whitenoise,
-> `MEDIA_ROOT` par env, logging) ont été livrés. Reste un seul écart **volontaire** :
+> `MEDIA_ROOT` par env, logging) sont livrés. Reste un seul écart **volontaire** :
 > python-decouple au lieu de django-environ (même format `.env`). Détail dans le tableau.
 
 ---
@@ -22,7 +21,7 @@ dans `HANDOFF-DEVOPS.md` — non répétés ici.
 | 3 — whitenoise | dep + middleware + STORAGES | ✅ | `whitenoise==6.12.0` ; middleware inséré après `SecurityMiddleware` **en prod** ; `STORAGES` = `CompressedManifestStaticFilesStorage` (prod). `collectstatic` validé. |
 | 4 — proxy SSL / cookies secure | via env, prod | ✅ | `prod.py` : `SECURE_PROXY_SSL_HEADER`, `SECURE_SSL_REDIRECT`, `SESSION/CSRF_COOKIE_SECURE`. |
 | 4 — logging stdout/stderr | dict LOGGING | ✅ | `LOGGING` avec `StreamHandler` (console), pas de FileHandler. |
-| 5 — gunicorn | dep prod + `--workers 1` | ✅ | `gunicorn==26.0.0`. WSGI = `config.wsgi:application`. `--workers 1` **obligatoire** (LocMemCache, cf HANDOFF-DEVOPS §3). |
+| 5 — gunicorn | dep prod + `--workers 1` | ✅ | `gunicorn==26.0.0`. WSGI = `config.wsgi:application`. `--workers 1` **obligatoire** (LocMemCache, cf §Rappels infra). |
 | 6 — requirements épinglés | `==` | ✅ | Tout épinglé, gunicorn + whitenoise inclus. |
 | 7 — Tailwind | signaler le build | ✅ signalé | Pipeline **Node standalone** (pas django-tailwind). CSS/JS compilés **non commités** → build requis au deploy (voir §9.5). |
 | 8 — branche DEV, `.gitignore` | — | ✅ | `.gitignore` exhaustif (`.env`, `*.sqlite3`, `.venv/`, `staticfiles/`, `media/`, `node_modules/`, compilés). |
@@ -51,8 +50,7 @@ Vérifs : 241 tests verts, `ruff` clean, `makemigrations --check` clean, `check 
    identifiants systemd / `/srv/<project>`, choisir un nom sans chiffre en tête
    (proposition : **`asso432hz`**, à valider).
 2. **Repo + branche** : `git@github.com:NicoWithManyO/432HZ.git`, branche **`DEV`**.
-   ⚠️ Le dernier commit (`35bf823`, P5 + ce handoff) **n'est pas encore poussé** —
-   Nico pousse manuellement ; vérifier que `origin/DEV` est à jour avant le deploy.
+   `origin/DEV` est à jour (Nico pousse manuellement ; tout est synchronisé).
 3. **`.env.example`** : présent à la racine, complet (contrat des vars) — `DJANGO_SECRET_KEY`,
    `DJANGO_ALLOWED_HOSTS`, `DJANGO_DB_PATH`, `DJANGO_MEDIA_ROOT`, `DJANGO_CSRF_TRUSTED_ORIGINS`,
    `DJANGO_HSTS_SECONDS`, `DJANGO_CSP_REPORT_ONLY`.
@@ -65,13 +63,57 @@ Vérifs : 241 tests verts, `ruff` clean, `makemigrations --check` clean, `check 
      compte owner (pas d'inscription ouverte). À lancer une fois, après `migrate`.
    - `migrate` crée aussi les tables **django-axes**.
 6. **Uploads média** : **OUI**. Images ≤ **8 Mo** (JPEG/PNG/WEBP), vidéos ≤ **100 Mo**
-   (MP4/WebM). → `client_max_body_size ≥ 100M` (cf HANDOFF-DEVOPS §1) et `MEDIA_ROOT`
+   (MP4/WebM). → `client_max_body_size ≥ 100M` (cf §Rappels infra) et `MEDIA_ROOT`
    hors repo à provisionner.
 
 ---
 
-## Rappels infra (détail dans `HANDOFF-DEVOPS.md`)
+## Rappels infra (sécurité applicative posée en P5)
 
-- **En-têtes / CSP / HSTS posés par Django** — ne pas dupliquer ni stripper côté Nginx.
-- **`--workers 1`** (rate-limit `django-ratelimit` sur LocMemCache mémoire de process).
-- **python-decouple** (pas django-environ) ; format `.env` identique.
+### 1. Taille des uploads
+
+Le bloc média de l'accueil accepte des vidéos auto-hébergées jusqu'à **100 Mo** :
+
+```
+client_max_body_size 100M;   # ≥ 100 Mo, sinon 413 sur l'upload vidéo
+```
+
+Côté Django, `DATA_UPLOAD_MAX_MEMORY_SIZE` n'a pas été relevé : il ne s'applique pas
+aux fichiers uploadés (le vrai garde-fou est `client_max_body_size`).
+
+### 2. En-têtes de sécurité — posés par Django, pas par l'infra
+
+Django pose lui-même **CSP, HSTS, nosniff, Referrer-Policy, X-Frame-Options** et les
+cookies `Secure`/`SameSite` (via `SECURE_*` en prod + `django-csp`). L'infra **ne doit
+ni les dupliquer ni les stripper** :
+
+- pas de second `Strict-Transport-Security` côté Nginx (double HSTS) ;
+- pas d'`add_header Content-Security-Policy` côté Nginx (écraserait/dédoublerait la CSP).
+
+La CSP autorise les iframes `frame-src` vers **youtube-nocookie.com**, **player.vimeo.com**
+et **www.helloasso.com** (click-to-load vidéo + adhésion). Si un proxy filtre les en-têtes,
+les laisser passer tels quels.
+
+En cas de violation CSP inattendue en prod : passer `DJANGO_CSP_REPORT_ONLY=True` le
+temps de diagnostiquer (ne bloque plus rien), corriger, repasser à `False`.
+
+### 3. Rate-limiting — impact sur le déploiement
+
+- **`django-axes`** (verrou login après 5 échecs) stocke en **base de données** :
+  indépendant du nombre de workers, survit au restart. `migrate` crée ses tables.
+- **`django-ratelimit`** (throttle invitation + uploads) s'appuie sur un **`LocMemCache`**
+  (mémoire du process). Conséquence : **garder un seul worker** (`gunicorn --workers 1`).
+  Avec plusieurs workers, chaque process aurait son compteur → limites multipliées. Si un
+  jour multi-worker devient nécessaire, basculer le cache sur `DatabaseCache` (SQLite,
+  multi-worker-safe) — pas de Redis requis.
+
+### 4. Configuration : python-decouple
+
+On lit la config via **python-decouple** (pas `django-environ`). Format `.env` identique
+(`CLÉ=valeur`). Variables sécurité (cf `.env.example`) :
+
+- `DJANGO_CSRF_TRUSTED_ORIGINS` — **à renseigner en prod** (origines HTTPS de confiance,
+  schéma inclus, séparées par des virgules). Sans elle, le POST derrière proxy HTTPS peut
+  échouer en 403 CSRF.
+- `DJANGO_HSTS_SECONDS` — optionnel, défaut 1 an.
+- `DJANGO_CSP_REPORT_ONLY` — optionnel, défaut `False`.

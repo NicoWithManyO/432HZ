@@ -155,7 +155,7 @@ LOGOUT_REDIRECT_URL = "gestion:login"
 #    redémarrage, indépendant du nombre de workers gunicorn).
 #  - django-ratelimit : protège l'acceptation d'invitation et les uploads. S'appuie sur le
 #    CACHES ci-dessous (LocMemCache, mémoire de process) → garder `--workers 1` (cf
-#    HANDOFF-DEVOPS.md). Désactivable en test via RATELIMIT_ENABLE (cf conftest.py).
+#    DEPLOY-HANDOFF.md). Désactivable en test via RATELIMIT_ENABLE (cf conftest.py).
 
 AUTHENTICATION_BACKENDS = [
     # AxesStandaloneBackend en tête : court-circuite l'auth si le couple est verrouillé.
