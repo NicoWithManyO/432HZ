@@ -29,6 +29,11 @@ SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
+# Gunicorn dialogue avec Nginx via un socket Unix : REMOTE_ADDR est vide, ce qui fait planter
+# django-ratelimit (clé `ip`) en 500 sur invitation/uploads. On lui fait lire l'IP cliente dans
+# X-Real-IP, posé par Nginx à partir du vrai pair (réécrit par le proxy, donc non spoofable).
+RATELIMIT_IP_META_KEY = "HTTP_X_REAL_IP"
+
 # HSTS : force HTTPS côté navigateur. Durée pilotable par env pour permettre une montée
 # progressive (commencer bas, puis 1 an). includeSubDomains + preload visent l'éligibilité
 # à la liste de préchargement des navigateurs.
