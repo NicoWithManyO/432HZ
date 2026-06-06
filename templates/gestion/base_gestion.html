@@ -27,6 +27,7 @@
       <a class="nav-link" href="{% url 'gestion:accounts-list' %}">Comptes</a>
       {% endif %}
       {% block gestion_nav %}{% endblock %}
+      <a class="nav-link" href="{% url 'gestion:password-change' %}">Mot de passe</a>
       <form method="post" action="{% url 'gestion:logout' %}" class="inline">
         {% csrf_token %}
         <button type="submit" class="nav-link">Déconnexion</button>
@@ -54,6 +55,7 @@
       {% if user.profile.is_owner %}
       <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:accounts-list' %}">Comptes</a>
       {% endif %}
+      <a class="font-display font-black text-[clamp(1.7rem,8vw,2.6rem)] leading-none py-[12px] border-b-2 border-line" href="{% url 'gestion:password-change' %}">Mot de passe</a>
       <form method="post" action="{% url 'gestion:logout' %}" class="mt-7">
         {% csrf_token %}
         <button type="submit" class="w-full bg-red text-paper border-2 border-ink shadow-[5px_5px_0_var(--ink)] text-center text-xl font-extrabold p-[16px]">Déconnexion</button>

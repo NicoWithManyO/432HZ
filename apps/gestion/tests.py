@@ -1015,3 +1015,65 @@ def test_upload_view_is_rate_limited(validated_client, settings):
     for _ in range(60):
         validated_client.post(url, {})
     assert validated_client.post(url, {}).status_code == 403
+
+
+# --- Changement de mot de passe (libre-service) ---
+
+
+@pytest.mark.django_db
+def test_password_change_requires_login(client):
+    response = client.get(reverse("gestion:password-change"))
+    assert response.status_code == 302  # anonyme → login
+
+
+@pytest.mark.django_db
+def test_password_change_forbidden_for_unvalidated(client):
+    user = User.objects.create_user("pending", password="pw-test-1234")
+    Profile.objects.create(user=user, is_validated=False)
+    client.force_login(user)
+    assert client.get(reverse("gestion:password-change")).status_code == 403
+
+
+@pytest.mark.django_db
+def test_password_change_updates_password_and_keeps_session(validated_client):
+    response = validated_client.post(
+        reverse("gestion:password-change"),
+        {
+            "old_password": "pw-test-1234",
+            "new_password1": "n3w-Str0ng-pass",
+            "new_password2": "n3w-Str0ng-pass",
+        },
+    )
+    assert response.status_code == 302  # PRG vers le dashboard
+    user = User.objects.get(username="editor")
+    assert user.check_password("n3w-Str0ng-pass")
+    # Le rehash de session laisse l'utilisateur connecté : le dashboard reste accessible.
+    assert validated_client.get(reverse("gestion:dashboard")).status_code == 200
+
+
+@pytest.mark.django_db
+def test_password_change_rejects_wrong_old_password(validated_client):
+    response = validated_client.post(
+        reverse("gestion:password-change"),
+        {
+            "old_password": "wrong-password",
+            "new_password1": "n3w-Str0ng-pass",
+            "new_password2": "n3w-Str0ng-pass",
+        },
+    )
+    assert response.status_code == 200  # re-rendu avec erreurs
+    assert User.objects.get(username="editor").check_password("pw-test-1234")
+
+
+@pytest.mark.django_db
+def test_password_change_rejects_weak_password(validated_client):
+    response = validated_client.post(
+        reverse("gestion:password-change"),
+        {
+            "old_password": "pw-test-1234",
+            "new_password1": "1234",
+            "new_password2": "1234",
+        },
+    )
+    assert response.status_code == 200
+    assert User.objects.get(username="editor").check_password("pw-test-1234")

@@ -72,6 +72,8 @@ urlpatterns = [
     path("connexion/", LoginView.as_view(template_name="gestion/login.html"), name="login"),
     path("deconnexion/", LogoutView.as_view(), name="logout"),
     path("invitation/<str:token>/", accept_invitation, name="accept-invitation"),
+    # Compte (libre-service)
+    path("compte/mot-de-passe/", views.PasswordChangeView.as_view(), name="password-change"),
     # Médiathèque
     path("medias/", views.MediaListView.as_view(), name="media-list"),
     path("medias/ajouter/", views.ImageUploadView.as_view(), name="media-upload"),

@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.views import PasswordChangeView as DjangoPasswordChangeView
 from django.db import transaction
 from django.db.models import Max, Q
 from django.http import Http404, JsonResponse
@@ -616,3 +617,16 @@ class ProfileToggleValidationView(OwnerRequiredMixin, View):
             profile.is_validated = not profile.is_validated
             profile.save(update_fields=["is_validated"])
         return redirect("gestion:accounts-list")
+
+
+class PasswordChangeView(ValidatedRequiredMixin, DjangoPasswordChangeView):
+    """Changement de mot de passe en libre-service, pour tout compte validé (owner ou
+    éditeur). Réutilise le formulaire Django : vérifie l'ancien mot de passe et applique
+    AUTH_PASSWORD_VALIDATORS. La session reste active après changement (rehash)."""
+
+    template_name = "gestion/password_change.html"
+    success_url = reverse_lazy("gestion:dashboard")
+
+    def form_valid(self, form):
+        messages.success(self.request, "Mot de passe mis à jour.")
+        return super().form_valid(form)
