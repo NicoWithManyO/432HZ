@@ -21,11 +21,12 @@ class EventQuerySet(PublishableQuerySet):
         return self.annotate(_reference=Coalesce("ends_at", "starts_at"))
 
     def upcoming(self):
-        # Un event reste « à venir » tant que sa fin (ou son début) n'est pas passée.
-        return self._with_reference().filter(_reference__gte=timezone.now())
+        # Un event reste « à venir » tout le jour J : on borne sur la date locale, pas
+        # l'instant (sinon il basculerait « passé » dès son heure de début dépassée).
+        return self._with_reference().filter(_reference__date__gte=timezone.localdate())
 
     def past(self):
-        return self._with_reference().filter(_reference__lt=timezone.now())
+        return self._with_reference().filter(_reference__date__lt=timezone.localdate())
 
 
 class Event(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
@@ -70,9 +71,10 @@ class Event(UUIDModel, TimeStampedModel, SluggedModel, PublishableModel):
 
     @property
     def is_past(self):
-        # Un event est passé une fois sa fin écoulée (ou son début, si pas de fin).
+        # Passé seulement une fois le jour J terminé : on compare la date locale de la
+        # référence (fin si renseignée, sinon début), pas l'instant.
         reference = self.ends_at or self.starts_at
-        return reference < timezone.now()
+        return timezone.localtime(reference).date() < timezone.localdate()
 
 
 class EventImage(models.Model):

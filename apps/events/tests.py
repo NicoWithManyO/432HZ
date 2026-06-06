@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 import pytest
 from django.utils import timezone
@@ -76,6 +76,28 @@ def test_is_past_uses_end_then_start():
     upcoming = Event.objects.create(title="à venir", starts_at=now + timedelta(days=2))
     assert past.is_past
     assert not upcoming.is_past
+
+
+@pytest.mark.django_db
+def test_event_on_its_day_counts_as_upcoming():
+    # Le jour J, un event reste « à venir » toute la journée, même si son heure de début
+    # est déjà passée : on compare la date locale, pas l'instant.
+    today_early = timezone.make_aware(datetime.combine(timezone.localdate(), time(0, 1)))
+    event = Event.objects.create(title="aujourd'hui", starts_at=today_early)
+    assert not event.is_past
+    assert event in Event.objects.upcoming()
+    assert event not in Event.objects.past()
+
+
+@pytest.mark.django_db
+def test_event_the_day_before_counts_as_past():
+    yesterday_late = timezone.make_aware(
+        datetime.combine(timezone.localdate() - timedelta(days=1), time(23, 0))
+    )
+    event = Event.objects.create(title="hier", starts_at=yesterday_late)
+    assert event.is_past
+    assert event in Event.objects.past()
+    assert event not in Event.objects.upcoming()
 
 
 @pytest.mark.django_db
